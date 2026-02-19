@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista de Compras</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css ">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-tema="azul">
+
+<div class="container">
+
+    <div class="notificacao" id="notificacao">
+        <span id="notificacaoTexto"></span>
+        <i class="fechar-notificacao fas fa-times" id="btnFecharNotificacao"></i>
+    </div>
+
+    <div class="cabecalho">
+        <h3>Lista de Compras</h3>
+        <div class="controles">
+            <i class="icone fas fa-palette" id="btnTema"></i>
+            <i class="icone fas fa-share-alt" id="btnCompartilhar"></i>
+            <i class="icone fas fa-sort-alpha-up" id="btnOrdenarNome"></i>
+            <i class="icone fas fa-sort-numeric-up" id="btnOrdenarData"></i>
+            <i class="icone fas fa-toggle-off" id="btnToggleTodos"></i>
+        </div>
+    </div>
+
+    <form id="formItem" class="formulario">
+        <div class="grupo-input-duplo">
+            <div class="grupo-input">
+                <label for="nome">Nome do item</label>
+                <input type="text" id="nome" placeholder="Nome do item" required>
+            </div>
+            <div class="grupo-input">
+                <label for="preco">Preço unitário</label>
+                <input type="number" id="preco" placeholder="Preço unitário" step="0.01" min="0" required>
+            </div>
+        </div>
+        <div class="grupo-input">
+            <label for="quantidade">Quantidade</label>
+            <input type="number" id="quantidade" placeholder="Quantidade" min="1" required>
+        </div>
+        <div class="botoes">
+            <button type="submit" id="botaoAcao" class="botao-primario">Adicionar</button>
+            <button type="button" id="botaoCancelar" class="botao-secundario" style="display:none;">Cancelar</button>
+        </div>
+    </form>
+
+    <div class="totais">
+        <div class="total-item">
+            <strong>Total Itens:</strong>
+            <span id="totalItens">0</span>
+        </div>
+        <div class="total-compra">
+            <strong>Total Compra:</strong>
+            <span id="totalCompra">R$ 0,00</span>
+        </div>
+    </div>
+
+    <div id="listaItens" class="lista-itens"></div>
+
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

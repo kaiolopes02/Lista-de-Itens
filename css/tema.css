@@ -1,0 +1,20 @@
+/* 🌈 Temas arco-íris */
+[data-tema="vermelho"] { --cor-primaria: #f44336; --cor-fundo: #fff5f5; }
+[data-tema="laranja"] { --cor-primaria: #ff9800; --cor-fundo: #fff8e1; }
+[data-tema="amarelo"] { --cor-primaria: #ffeb3b; --cor-fundo: #fffde7; }
+[data-tema="verde"] { --cor-primaria: #4caf50; --cor-fundo: #e8f5e9; }
+[data-tema="azul"] { --cor-primaria: #2196f3; --cor-fundo: #e3f2fd; }
+[data-tema="anil"] { --cor-primaria: #3f51b5; --cor-fundo: #e8eaf6; }
+[data-tema="violeta"] { --cor-primaria: #9c27b0; --cor-fundo: #f3e5f5; }
+[data-tema="escuro"] { --cor-fundo: #1f1f1f; --cor-texto: #f5f5f5; --cor-borda: #333; }
+
+/* 📱 Responsividade */
+@media (max-width: 768px) {
+  .grupo-input-duplo { grid-template-columns: 1fr; }
+  input, button { font-size: 1.1rem; padding: 16px; }
+  .item { padding: 1rem; }
+}
+
+@media (max-width: 480px) {
+  .totais { flex-direction: column; gap: 10px; }
+}

@@ -1,0 +1,31 @@
+/* Reset e variáveis globais */
+:root {
+  --cor-fundo: #ffffff;
+  --cor-texto: #333333;
+  --cor-borda: #e0e0e0;
+  --cor-sucesso: #4caf50;
+  --cor-alerta: #ff9800;
+  --cor-erro: #f44336;
+  --fonte-principal: 'Poppins', sans-serif;
+  --raio-borda: 12px;
+  --sombra: 0 4px 8px rgba(0,0,0,0.1);
+  --transicao: 0.3s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: var(--fonte-principal);
+  transition: all var(--transicao);
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  color: var(--cor-texto);
+  padding: 20px;
+}

@@ -1,0 +1,79 @@
+/* Container principal */
+.container {
+  width: 100%;
+  max-width: 800px;
+  padding: 25px;
+  border-radius: 20px;
+  background-color: var(--cor-fundo);
+  box-shadow: var(--sombra);
+}
+
+/* Cabeçalho e controles */
+.cabecalho {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.cabecalho h3 {
+  font-size: clamp(1.6rem, 4vw, 2rem);
+  color: var(--cor-primaria);
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.controles {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.icone {
+  cursor: pointer;
+  font-size: 1.8rem;
+  color: var(--cor-primaria);
+}
+
+.icone:hover {
+  transform: scale(1.15);
+  opacity: 0.9;
+}
+
+/* Lista de itens */
+.lista-itens {
+  display: grid;
+  gap: 15px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 1.2rem;
+  border: 2px solid var(--cor-borda);
+  border-radius: 14px;
+  background-color: var(--cor-fundo);
+  box-shadow: var(--sombra);
+  position: relative;
+  gap: 1rem;
+}
+
+.item.excluido {
+  opacity: 0.6;
+  background-color: rgba(0,0,0,0.05);
+}
+
+.info-item {
+  flex: 1;
+}
+
+.info-item div {
+  margin-top: 5px;
+  font-size: 0.95rem;
+  color: #666;
+}
+
+.acoes-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
