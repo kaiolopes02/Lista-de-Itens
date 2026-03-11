@@ -2,7 +2,7 @@
   "name": "Lista de Compras",
   "short_name": "Compras",
   "description": "Controle suas compras de forma simples e rápida.",
-  "start_url": "/Lista-de-itens/",
+  "start_url": "/Lista-de-Itens/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2ecc71",
