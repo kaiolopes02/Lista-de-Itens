@@ -1,31 +1,81 @@
-/* Reset e variáveis globais */
+/* ============================================================
+   BASE — Reset, variáveis e body
+   ============================================================ */
 :root {
-  --cor-fundo: #ffffff;
-  --cor-texto: #333333;
-  --cor-borda: #e0e0e0;
-  --cor-sucesso: #4caf50;
-  --cor-alerta: #ff9800;
-  --cor-erro: #f44336;
-  --fonte-principal: 'Poppins', sans-serif;
-  --raio-borda: 12px;
-  --sombra: 0 4px 8px rgba(0,0,0,0.1);
-  --transicao: 0.3s ease;
+  /* Cor primária padrão (sobrescrita pelo tema) */
+  --cor-primaria:     #2196f3;
+  --cor-primaria-rgb: 33, 150, 243;
+  --cor-primaria-dark:#1565c0;
+
+  /* Superfícies */
+  --cor-fundo:  #f0f7ff;
+  --cor-card:   #ffffff;
+
+  /* Texto */
+  --cor-texto:       #1a1f36;
+  --cor-texto-suave: #6b7280;
+
+  /* Utilitários */
+  --cor-borda:   #e5eaf3;
+  --cor-sucesso: #10b981;
+  --cor-alerta:  #f59e0b;
+  --cor-erro:    #ef4444;
+
+  /* Tipografia */
+  --fonte: 'Outfit', sans-serif;
+
+  /* Bordas */
+  --raio:    14px;
+  --raio-lg: 20px;
+
+  /* Sombras */
+  --sombra:       0 2px 12px rgba(0,0,0,0.08);
+  --sombra-hover: 0 8px 24px rgba(0,0,0,0.13);
+
+  /* Animações */
+  --trans: 0.22s cubic-bezier(.4,0,.2,1);
 }
 
-* {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: var(--fonte-principal);
-  transition: all var(--transicao);
+  font-family: var(--fonte);
 }
 
 body {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  background-color: var(--cor-fundo);
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(var(--cor-primaria-rgb), 0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 90%, rgba(var(--cor-primaria-rgb), 0.08) 0%, transparent 50%);
   color: var(--cor-texto);
-  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 16px 80px;
+  transition: background-color var(--trans), color var(--trans);
+}
+
+/* Animações globais */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes itemEntrar {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+@keyframes itemSair {
+  from { opacity: 1; transform: scale(1);    max-height: 80px; margin-bottom: 10px; padding: 14px 16px; }
+  to   { opacity: 0; transform: scale(0.95); max-height: 0;    margin-bottom: 0;   padding: 0;          }
 }

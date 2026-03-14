@@ -1,74 +1,104 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-tema="azul">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lista de Compras</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css ">
-<link rel="stylesheet" href="css/style.css">
-
-<link rel="icon" type="image/png" href="assets/icon-192.png">
-<link rel="apple-touch-icon" href="assets/icon-192.png">
-<link rel="manifest" href="site.webmanifest">
-<meta name="theme-color" content="#2ecc71">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lista de Compras</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#2ecc71">
 </head>
-<body data-tema="azul">
+<body>
 
-<div class="container">
+  <div class="notificacao" id="notificacao" role="status" aria-live="polite">
+    <div class="notif-icone info" id="notifIcone"></div>
+    <span class="notif-texto" id="notificacaoTexto"></span>
+    <button class="notif-fechar" id="btnFecharNotificacao" aria-label="Fechar notificação"></button>
+  </div>
 
-    <div class="notificacao" id="notificacao">
-        <span id="notificacaoTexto"></span>
-        <i class="fechar-notificacao fas fa-times" id="btnFecharNotificacao"></i>
+  <div class="tema-overlay" id="temaOverlay" role="dialog" aria-modal="true">
+    <div class="tema-modal">
+      <h3 id="temaTitulo">Escolha um tema</h3>
+      <div class="tema-grade" id="temaGrade"></div>
     </div>
+  </div>
 
-    <div class="cabecalho">
-        <h3>Lista de Compras</h3>
-        <div class="controles">
-            <i class="icone fas fa-palette" id="btnTema"></i>
-            <i class="icone fas fa-share-alt" id="btnCompartilhar"></i>
-            <i class="icone fas fa-sort-alpha-up" id="btnOrdenarNome"></i>
-            <i class="icone fas fa-sort-numeric-up" id="btnOrdenarData"></i>
-            <i class="icone fas fa-toggle-off" id="btnToggleTodos"></i>
-        </div>
-    </div>
+  <div class="app">
 
-    <form id="formItem" class="formulario">
-        <div class="grupo-input-duplo">
-            <div class="grupo-input">
-                <label for="nome">Nome do item</label>
-                <input type="text" id="nome" placeholder="Nome do item" required>
-            </div>
-            <div class="grupo-input">
-                <label for="preco">Preço unitário</label>
-                <input type="number" id="preco" placeholder="Preço unitário" step="0.01" min="0" required>
-            </div>
-        </div>
-        <div class="grupo-input">
-            <label for="quantidade">Quantidade</label>
-            <input type="number" id="quantidade" placeholder="Quantidade" min="1" required>
-        </div>
-        <div class="botoes">
-            <button type="submit" id="botaoAcao" class="botao-primario">Adicionar</button>
-            <button type="button" id="botaoCancelar" class="botao-secundario" style="display:none;">Cancelar</button>
-        </div>
-    </form>
+    <header class="card cabecalho">
+      <div class="cabecalho-titulo">
+        <div class="logo-icone" id="logoIcone"></div>
+        <h1>Lista de Compras<span>Organize suas compras</span></h1>
+      </div>
+      <div class="controles">
+        <button class="btn-icone" id="btnTema"         title="Mudar tema"></button>
+        <button class="btn-icone" id="btnCompartilhar" title="Compartilhar lista"></button>
+        <button class="btn-icone" id="btnOrdenarNome"  title="Ordenar A–Z"></button>
+        <button class="btn-icone" id="btnOrdenarData"  title="Mais recente"></button>
+        <button class="btn-icone" id="btnToggleTodos"  title="Marcar / Desmarcar todos"></button>
+      </div>
+    </header>
 
-    <div class="totais">
-        <div class="total-item">
-            <strong>Total Itens:</strong>
-            <span id="totalItens">0</span>
+    <section class="card totais-card">
+      <div class="total-bloco">
+        <label><span class="label-icone" id="iconeCesto"></span>Total de itens</label>
+        <div class="valor" id="totalItens">0</div>
+        <div class="progresso-barra-wrap">
+          <div class="progresso-barra" id="progresso" style="width:0%"></div>
         </div>
-        <div class="total-compra">
-            <strong>Total Compra:</strong>
-            <span id="totalCompra">R$ 0,00</span>
+      </div>
+      <div class="total-bloco">
+        <label><span class="label-icone" id="iconeEtiqueta"></span>Itens marcados</label>
+        <div class="valor" id="totalMarcados">0/0</div>
+      </div>
+      <div class="total-bloco destaque">
+        <label><span class="label-icone" id="iconeRecibo"></span>Total da compra</label>
+        <div class="valor" id="totalCompra">R$ 0,00</div>
+      </div>
+    </section>
+
+    <section class="card form-card" id="formCard">
+      <div class="edit-badge" id="editBadge">
+        <span id="editBadgeIcone"></span>
+        Editando — <span id="editNomeLabel"></span>
+      </div>
+      <h2>Adicionar item</h2>
+      <form id="formItem" class="formulario" autocomplete="off" novalidate>
+        <div class="grupo-duplo">
+          <div class="campo">
+            <label for="nome"><span class="label-icone" id="iconeNome"></span>Nome do item</label>
+            <input type="text" id="nome" placeholder="Ex: Arroz integral" required>
+          </div>
+          <div class="campo">
+            <label for="preco"><span class="label-icone" id="iconePreco"></span>Preço unitário</label>
+            <input type="number" id="preco" placeholder="0,00" step="0.01" min="0" required>
+          </div>
         </div>
-    </div>
+        <div class="campo">
+          <label for="quantidade"><span class="label-icone" id="iconeQtd"></span>Quantidade</label>
+          <input type="number" id="quantidade" placeholder="1" min="1" required>
+        </div>
+        <div class="form-acoes">
+          <button type="submit"  id="botaoAcao"    class="btn btn-primario"></button>
+          <button type="button"  id="botaoCancelar" class="btn btn-cancelar" style="display:none"></button>
+        </div>
+      </form>
+    </section>
 
-    <div id="listaItens" class="lista-itens"></div>
+    <section class="card">
+      <div class="lista-header">
+        <h2>Itens <span class="badge-contagem" id="badgeContagem">0</span></h2>
+        <div class="lista-acoes">
+          <button class="btn-icone" id="btnLimparTodos" title="Limpar lista" style="display:none"></button>
+        </div>
+      </div>
+      <div id="listaItens" class="lista-itens" role="list"></div>
+    </section>
 
-</div>
+  </div>
 
-<script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

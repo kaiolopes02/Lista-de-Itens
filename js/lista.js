@@ -1,46 +1,81 @@
+/* ============================================================
+   LISTA — Renderização dos itens e cálculo de totais
+   ============================================================ */
 import { state, salvarEstado } from './storage.js';
+import { icone }               from './icones.js';
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatarMoeda(v) {
+  return v.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
 
 export function atualizarLista() {
-    const lista = document.getElementById('listaItens');
-    lista.innerHTML = '';
+  const lista     = document.getElementById('listaItens');
+  const badge     = document.getElementById('badgeContagem');
+  const btnLimpar = document.getElementById('btnLimparTodos');
+  if (!lista) return;
 
-    state.itens.forEach(item => {
-        const div = document.createElement('div');
-        div.classList.add('item');
-        if (!item.incluido) div.classList.add('excluido');
+  badge.textContent       = state.itens.length;
+  btnLimpar.style.display = state.itens.length ? 'flex' : 'none';
+  lista.innerHTML = '';
 
-        div.innerHTML = `
-            <div class="info-item">
-                <strong>${item.nome}</strong>
-                <div>R$ ${item.preco.toFixed(2)} x ${item.quantidade} un = R$ ${(item.preco * item.quantidade).toFixed(2)}</div>
-            </div>
-            <div class="acoes-item">
-                <i class="fas fa-check" data-id="${item.id}" style="color:${item.incluido ? 'green' : 'gray'}; font-size: 1.4em;"></i>
-                <i class="fas fa-edit" data-id="${item.id}" style="font-size: 1.4em; margin-right: 8px;"></i>
-                <i class="fas fa-trash" data-id="${item.id}" style="font-size: 1.4em;"></i>
-            </div>
-        `;
-        lista.appendChild(div);
-    });
+  if (!state.itens.length) {
+    lista.innerHTML = `
+      <div class="estado-vazio">
+        <div class="vazio-icone">${icone('carrinhoMais')}</div>
+        <div>
+          <strong>Lista vazia!</strong>
+          <p>Adicione itens acima para começar sua lista de compras.</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  state.itens.forEach(item => {
+    const incluido = item.incluido !== false;
+    const div = document.createElement('div');
+    div.classList.add('item', incluido ? 'incluido' : 'excluido');
+    div.dataset.id = item.id;
+    div.innerHTML = `
+      <div class="item-check" data-acao="toggle" data-id="${item.id}" title="${incluido ? 'Desmarcar' : 'Marcar'}">
+        ${incluido ? icone('check') : ''}
+      </div>
+      <div class="item-info">
+        <div class="item-nome">${escHtml(item.nome)}</div>
+        <div class="item-detalhes">
+          <span class="item-detalhe-tag">${formatarMoeda(item.preco)} / un</span>
+          <span class="item-detalhe-tag">${item.quantidade} un</span>
+        </div>
+      </div>
+      <div class="item-total">${formatarMoeda(item.preco * item.quantidade)}</div>
+      <div class="item-acoes">
+        <button class="btn-acao editar"  data-acao="editar"  data-id="${item.id}" title="Editar">${icone('editar')}</button>
+        <button class="btn-acao excluir" data-acao="excluir" data-id="${item.id}" title="Excluir">${icone('lixeira')}</button>
+      </div>`;
+    lista.appendChild(div);
+  });
 }
 
 export function calcularTotais() {
-    const totalItens = state.itens.reduce((acc, i) => acc + (i.incluido ? i.quantidade : 0), 0);
-    const totalCompra = state.itens.reduce((acc, i) => acc + (i.incluido ? i.preco * i.quantidade : 0), 0);
-    document.getElementById('totalItens').textContent = totalItens;
-    document.getElementById('totalCompra').textContent = `R$ ${totalCompra.toFixed(2)}`;
+  const incluidos  = state.itens.filter(i => i.incluido !== false);
+  const totalItens = incluidos.reduce((a,i) => a + i.quantidade, 0);
+  const totalValor = incluidos.reduce((a,i) => a + i.preco * i.quantidade, 0);
+  const progPct    = state.itens.length ? (incluidos.length / state.itens.length) * 100 : 0;
+  document.getElementById('totalItens').textContent    = totalItens;
+  document.getElementById('totalMarcados').textContent = `${incluidos.length}/${state.itens.length}`;
+  document.getElementById('totalCompra').textContent   = formatarMoeda(totalValor);
+  document.getElementById('progresso').style.width     = progPct + '%';
 }
 
 export function ordenarPorNome() {
-    state.itens.sort((a, b) => a.nome.localeCompare(b.nome));
-    atualizarLista();
-    calcularTotais();
-    salvarEstado();
+  state.itens.sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  atualizarLista(); calcularTotais(); salvarEstado();
 }
 
 export function ordenarPorData() {
-    state.itens.sort((a, b) => b.id - a.id); // Mais recente primeiro
-    atualizarLista();
-    calcularTotais();
-    salvarEstado();
+  state.itens.sort((a,b) => b.id - a.id);
+  atualizarLista(); calcularTotais(); salvarEstado();
 }

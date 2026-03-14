@@ -1,22 +1,33 @@
-export function mostrarNotificacao(msg) {
-    const area = document.getElementById('notificacao');
-    const texto = document.getElementById('notificacaoTexto');
-    if (!area || !texto) return;
+/* ============================================================
+   NOTIFICAÇÃO — Toast flutuante tipado
+   ============================================================ */
+import { icone } from './icones.js';
 
-    texto.textContent = msg;
+const TIPOS = {
+  sucesso: { cls:'sucesso', ico:'checkCirculo' },
+  erro:    { cls:'erro',    ico:'erroCirculo'  },
+  info:    { cls:'info',    ico:'infoCirculo'  },
+};
 
-    area.classList.add('mostrar');
+export function mostrarNotificacao(msg, tipo = 'info') {
+  const area  = document.getElementById('notificacao');
+  const texto = document.getElementById('notificacaoTexto');
+  const el    = document.getElementById('notifIcone');
+  if (!area || !texto || !el) return;
 
-    clearTimeout(area._timeout);
+  const cfg = TIPOS[tipo] ?? TIPOS.info;
+  texto.textContent = msg;
+  el.className      = `notif-icone ${cfg.cls}`;
+  el.innerHTML      = icone(cfg.ico);
 
-    area._timeout = setTimeout(() => {
-        area.classList.remove('mostrar');
-    }, 3000);
+  area.classList.add('mostrar');
+  clearTimeout(area._timeout);
+  area._timeout = setTimeout(() => area.classList.remove('mostrar'), 3200);
 }
 
 export function fecharNotificacao() {
-    const area = document.getElementById('notificacao');
-    if (!area) return;
-    clearTimeout(area._timeout);
-    area.classList.remove('mostrar');
+  const area = document.getElementById('notificacao');
+  if (!area) return;
+  clearTimeout(area._timeout);
+  area.classList.remove('mostrar');
 }

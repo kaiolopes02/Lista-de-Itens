@@ -1,96 +1,365 @@
-/* Formulários e inputs */
-.formulario {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  margin-bottom: 2rem;
-}
+/* ============================================================
+   COMPONENTS — Botões, formulário, modal de temas
+   ============================================================ */
 
-.grupo-input-duplo {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-}
-
-.grupo-input {
+/* ============================================================
+   BOTÕES DE ÍCONE (toolbar do cabeçalho e lista)
+   ============================================================ */
+.controles {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.grupo-input label {
-  font-size: 1rem;
-  color: var(--cor-primaria);
-  font-weight: 500;
-  display: flex;
+  gap: 6px;
   align-items: center;
-  gap: 8px;
 }
 
-input, button {
-  padding: 14px 16px;
-  border: 2px solid var(--cor-borda);
-  border-radius: var(--raio-borda);
-  font-size: 1rem;
-  width: 100%;
-}
-
-input:focus {
-  border-color: var(--cor-primaria);
-  box-shadow: 0 0 8px rgba(0,0,0,0.1);
-  outline: none;
-}
-
-/* Botões */
-.botoes {
-  display: flex;
-  gap: 12px;
-}
-
-button {
+.btn-icone {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1.5px solid var(--cor-borda);
+  background: var(--cor-card);
+  color: var(--cor-texto-suave);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  font-weight: 600;
-  border: none;
-  padding: 14px;
-  border-radius: var(--raio-borda);
+  font-size: 0.95rem;
+  transition: all var(--trans);
+  flex-shrink: 0;
 }
 
-.botao-primario {
-  background-color: var(--cor-primaria);
-  color: white;
-}
-
-.botao-secundario {
-  background-color: var(--cor-borda);
-  color: var(--cor-texto);
-}
-
-button:hover {
-  filter: brightness(0.9);
+.btn-icone:hover {
+  background: rgba(var(--cor-primaria-rgb), 0.08);
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
   transform: translateY(-1px);
 }
 
-/* Totais */
-.totais {
-  display: flex;
-  justify-content: space-between;
-  margin: 1.5rem 0;
-  padding: 1rem;
-  background-color: rgba(0,0,0,0.02);
-  border-radius: 10px;
+.btn-icone.ativo {
+  background: rgba(var(--cor-primaria-rgb), 0.12);
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
 }
 
-.total-item, .total-compra {
+/* Botões de ação dos itens */
+.btn-acao {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  transition: all var(--trans);
+  color: var(--cor-texto-suave);
+}
+
+.btn-acao:hover { border-color: var(--cor-borda); }
+
+.btn-acao.editar:hover {
+  background: rgba(var(--cor-primaria-rgb), 0.10);
+  color: var(--cor-primaria);
+  border-color: rgba(var(--cor-primaria-rgb), 0.30);
+}
+
+.btn-acao.excluir:hover {
+  background: rgba(239, 68, 68, 0.10);
+  color: var(--cor-erro);
+  border-color: rgba(239, 68, 68, 0.30);
+}
+
+/* ============================================================
+   FORMULÁRIO
+   ============================================================ */
+.form-card { padding: 24px 28px; }
+
+.form-card h2 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--cor-texto-suave);
+  margin-bottom: 18px;
+}
+
+/* Badge de modo edição */
+.edit-badge {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(var(--cor-primaria-rgb), 0.10);
+  border-radius: var(--raio);
+  margin-bottom: 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cor-primaria);
+  border: 1.5px dashed rgba(var(--cor-primaria-rgb), 0.4);
+}
+
+.form-card.editando .edit-badge { display: flex; }
+.form-card.editando h2          { display: none;  }
+
+/* Grid do formulário */
+.formulario { display: flex; flex-direction: column; gap: 14px; }
+
+.grupo-duplo {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+}
+
+/* Campos */
+.campo { display: flex; flex-direction: column; gap: 6px; }
+
+.campo label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cor-texto-suave);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.campo label i { font-size: 0.7rem; color: var(--cor-primaria); }
+
+.campo input {
+  padding: 12px 14px;
+  border: 2px solid var(--cor-borda);
+  border-radius: var(--raio);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--cor-texto);
+  background: var(--cor-fundo);
+  width: 100%;
+  outline: none;
+  font-family: var(--fonte);
+  transition: border-color var(--trans), box-shadow var(--trans), background var(--trans);
+}
+
+.campo input::placeholder {
+  color: var(--cor-texto-suave);
+  font-weight: 400;
+}
+
+.campo input:focus {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px rgba(var(--cor-primaria-rgb), 0.15);
+  background: var(--cor-card);
+}
+
+.campo input:invalid:not(:placeholder-shown) {
+  border-color: var(--cor-erro);
+}
+
+/* Ações do formulário */
+.form-acoes {
+  display: flex;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+/* Botões de ação do form */
+.btn {
+  padding: 11px 20px;
+  border-radius: var(--raio);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: all var(--trans);
+  letter-spacing: 0.01em;
+  font-family: var(--fonte);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* SVG dentro dos botões .btn: tamanho fixo */
+.btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  flex-shrink: 0;
+}
+
+.btn-primario {
+  background: linear-gradient(135deg, var(--cor-primaria), var(--cor-primaria-dark));
+  color: #fff;
+  flex: 1;
+  box-shadow: 0 3px 10px rgba(var(--cor-primaria-rgb), 0.30);
+}
+
+.btn-primario svg { stroke: #fff; }
+
+.btn-primario:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(var(--cor-primaria-rgb), 0.40);
+  filter: brightness(1.05);
+}
+
+.btn-primario:active { transform: translateY(0); }
+
+.btn-cancelar {
+  background: var(--cor-fundo);
+  color: var(--cor-texto-suave);
+  border: 2px solid var(--cor-borda);
+  padding: 9px 16px;
+}
+
+.btn-cancelar:hover {
+  background: var(--cor-borda);
+  color: var(--cor-texto);
+}
+
+/* ============================================================
+   MODAL DE TEMAS
+   ============================================================ */
+.tema-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.40);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+.tema-overlay.aberto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tema-modal {
+  background: var(--cor-card);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  padding: 24px;
+  width: min(380px, 90vw);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.20);
+  animation: slideUp 0.25s cubic-bezier(.4,0,.2,1);
+}
+
+.tema-modal h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--cor-texto);
+}
+
+.tema-grade {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.tema-opcao {
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 10px 8px;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  background: var(--cor-fundo);
+  transition: all var(--trans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--cor-texto-suave);
+  font-family: var(--fonte);
 }
 
-.total-item span, .total-compra span {
-  font-size: 1rem;
+.tema-opcao:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sombra);
+}
+
+.tema-opcao.selecionado {
+  border-color: var(--cor-primaria);
+  color: var(--cor-texto);
+}
+
+.tema-bolinha {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.10);
+}
+
+/* ============================================================
+   SVG ICONS — tamanho e alinhamento
+   ============================================================ */
+
+/* Ícones nos botões da toolbar */
+.btn-icone svg {
+  width: 17px;
+  height: 17px;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Logo no cabeçalho */
+.logo-icone svg {
+  width: 22px;
+  height: 22px;
+  stroke: #fff;
+  display: block;
+}
+
+/* Botões de ação dos itens (editar/excluir) */
+.btn-acao svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Ícone da notificação */
+.notif-icone svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* Fechar notificação */
+.notif-fechar svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+/* Badge de edição */
+.edit-badge svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* Ícones inline nos labels dos campos */
+.label-icone {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.label-icone svg {
+  width: 13px;
+  height: 13px;
+  color: var(--cor-primaria);
+}
+
+/* Ícone estado vazio */
+.vazio-icone svg {
+  width: 40px;
+  height: 40px;
+  color: var(--cor-primaria);
 }
