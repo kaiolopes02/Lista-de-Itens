@@ -64,17 +64,71 @@ function injetarIcones() {
 }
 
 /* ── Compartilhamento ─────────────────────────────────────── */
+function gerarTextoLista() {
+  if (!state.itens.length) return null;
+
+  const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const incluidos = state.itens.filter(i => i.incluido !== false);
+
+  const linhas = ['🛒 LISTA DE COMPRAS', ''];
+
+  state.itens.forEach((item, idx) => {
+    const marcado   = item.incluido !== false;
+    const subtotal  = item.preco * item.quantidade;
+    const prefixo   = marcado ? '✅' : '⬜';
+    linhas.push(`${prefixo} ${idx + 1}. ${item.nome}`);
+    linhas.push(`   Qtd: ${item.quantidade}  |  Preço unit.: ${fmt(item.preco)}  |  Subtotal: ${fmt(subtotal)}`);
+  });
+
+  const totalItens = incluidos.reduce((a, i) => a + i.quantidade, 0);
+  const totalValor = incluidos.reduce((a, i) => a + i.preco * i.quantidade, 0);
+
+  linhas.push('');
+  linhas.push('─'.repeat(36));
+  linhas.push(`📦 Total de itens (marcados): ${totalItens}`);
+  linhas.push(`💰 Valor total da compra:     ${fmt(totalValor)}`);
+
+  return linhas.join('\n');
+}
+
+function gerarLink() {
+  const payload = btoa(encodeURIComponent(JSON.stringify({
+    itens: state.itens,
+    temaAtual: state.temaAtual,
+  })));
+  return `${location.origin}${location.pathname}?data=${payload}`;
+}
+
 async function compartilhar() {
+  const texto = gerarTextoLista();
+  if (!texto) {
+    mostrarNotificacao('Adicione itens antes de compartilhar.', 'erro');
+    return;
+  }
+
+  const link = gerarLink();
+  const textoCompleto = `${texto}\n\n🔗 Acesse e edite a lista:\n${link}`;
+
+  // Web Share API — abre o menu nativo do sistema (WhatsApp, Telegram, e-mail…)
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'Lista de Compras',
+        text:  textoCompleto,
+        url:   link,
+      });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
+  }
+
+  // Fallback: copia texto + link para a área de transferência
   try {
-    const payload = btoa(encodeURIComponent(JSON.stringify({
-      itens: state.itens, temaAtual: state.temaAtual,
-    })));
-    await navigator.clipboard.writeText(
-      `${location.origin}${location.pathname}?data=${payload}`
-    );
-    mostrarNotificacao('Link copiado!', 'sucesso');
+    await navigator.clipboard.writeText(textoCompleto);
+    mostrarNotificacao('Lista e link copiados! (compartilhamento não suportado neste browser)', 'info');
   } catch {
-    mostrarNotificacao('Não foi possível copiar o link.', 'erro');
+    mostrarNotificacao('Não foi possível compartilhar.', 'erro');
   }
 }
 
