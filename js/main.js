@@ -29,11 +29,9 @@ function cancelarEdicao() {
 
 /* ── Atualiza botão do formulário ─────────────────────────── */
 function atualizarBotaoForm(modoEdicao) {
-  const btn = document.getElementById('botaoAcao');
+  const btn  = document.getElementById('botaoAcao');
   const btnC = document.getElementById('botaoCancelar');
-  if (btn)  btn.innerHTML  = modoEdicao
-    ? icone('salvar')  + ' Salvar'
-    : icone('mais')    + ' Adicionar';
+  if (btn)  btn.innerHTML  = modoEdicao ? icone('salvar') + ' Salvar' : icone('mais') + ' Adicionar';
   if (btnC) btnC.innerHTML = icone('fechar') + ' Cancelar';
 }
 
@@ -43,20 +41,20 @@ function injetarIcones() {
     const el = document.getElementById(id);
     if (el) el.innerHTML = icone(nome);
   };
-  set('logoIcone',          'carrinho');
-  set('btnTema',            'paleta');
-  set('btnCompartilhar',    'compartilhar');
-  set('btnOrdenarNome',     'ordenarNome');
-  set('btnOrdenarData',     'ordenarNum');
-  set('btnToggleTodos',     'marcarTodos');
-  set('btnLimparTodos',     'lixeira');
-  set('iconeCesto',         'cesto');
-  set('iconeEtiqueta',      'etiqueta');
-  set('iconeRecibo',        'recibo');
-  set('iconeNome',          'etiqueta');
-  set('iconePreco',         'moedas');
-  set('iconeQtd',           'hashtag');
-  set('editBadgeIcone',     'editar');
+  set('logoIcone',           'carrinho');
+  set('btnTema',             'paleta');
+  set('btnCompartilhar',     'compartilhar');
+  set('btnOrdenarNome',      'ordenarNome');
+  set('btnOrdenarData',      'ordenarNum');
+  set('btnToggleTodos',      'marcarTodos');
+  set('btnLimparTodos',      'lixeira');
+  set('iconeCesto',          'cesto');
+  set('iconeEtiqueta',       'etiqueta');
+  set('iconeRecibo',         'recibo');
+  set('iconeNome',           'etiqueta');
+  set('iconePreco',          'moedas');
+  set('iconeQtd',            'hashtag');
+  set('editBadgeIcone',      'editar');
   set('btnFecharNotificacao','fechar');
   const temaTitulo = document.getElementById('temaTitulo');
   if (temaTitulo) temaTitulo.innerHTML = icone('paleta') + ' Escolha um tema';
@@ -67,17 +65,15 @@ function injetarIcones() {
 function gerarTextoLista() {
   if (!state.itens.length) return null;
 
-  const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const fmt      = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const incluidos = state.itens.filter(i => i.incluido !== false);
-
-  const linhas = ['🛒 LISTA DE COMPRAS', ''];
+  const linhas   = ['🛒 LISTA DE COMPRAS', ''];
 
   state.itens.forEach((item, idx) => {
-    const marcado   = item.incluido !== false;
-    const subtotal  = item.preco * item.quantidade;
-    const prefixo   = marcado ? '✅' : '⬜';
-    linhas.push(`${prefixo} ${idx + 1}. ${item.nome}`);
-    linhas.push(`   Qtd: ${item.quantidade}  |  Preço unit.: ${fmt(item.preco)}  |  Subtotal: ${fmt(subtotal)}`);
+    const marcado  = item.incluido !== false;
+    const subtotal = item.preco * item.quantidade;
+    linhas.push(`${marcado ? '✅' : '⬜'} ${idx + 1}. ${item.nome}`);
+    linhas.push(`   Qtd: ${item.quantidade}  |  Unit.: ${fmt(item.preco)}  |  Subtotal: ${fmt(subtotal)}`);
   });
 
   const totalItens = incluidos.reduce((a, i) => a + i.quantidade, 0);
@@ -107,26 +103,26 @@ async function compartilhar() {
   }
 
   const link = gerarLink();
-  const textoCompleto = `${texto}\n\n🔗 Acesse e edite a lista:\n${link}`;
 
   // Web Share API — abre o menu nativo do sistema (WhatsApp, Telegram, e-mail…)
+  // O texto contém a lista legível; o link vai no campo url (sem duplicar no texto)
   if (navigator.share) {
     try {
       await navigator.share({
         title: 'Lista de Compras',
-        text:  textoCompleto,
+        text:  texto + '\n\n🔗 Acesse e edite a lista:',
         url:   link,
       });
       return;
     } catch (err) {
-      if (err.name === 'AbortError') return;
+      if (err.name === 'AbortError') return; // usuário cancelou
     }
   }
 
-  // Fallback: copia texto + link para a área de transferência
+  // Fallback para browsers sem suporte à Web Share API
   try {
-    await navigator.clipboard.writeText(textoCompleto);
-    mostrarNotificacao('Lista e link copiados! (compartilhamento não suportado neste browser)', 'info');
+    await navigator.clipboard.writeText(`${texto}\n\n🔗 Acesse e edite a lista:\n${link}`);
+    mostrarNotificacao('Lista copiada! (compartilhamento não suportado neste browser)', 'info');
   } catch {
     mostrarNotificacao('Não foi possível compartilhar.', 'erro');
   }
@@ -184,7 +180,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('listaItens').addEventListener('click', e => {
     const btn = e.target.closest('[data-acao]');
     if (!btn) return;
-    const id = parseInt(btn.dataset.id);
+    const id   = parseInt(btn.dataset.id);
     const acao = btn.dataset.acao;
     if (!id || !acao) return;
     if (acao === 'toggle')  { toggleItem(id); return; }
