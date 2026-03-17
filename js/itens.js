@@ -58,11 +58,12 @@ export function toggleItem(id) {
   atualizarLista(); calcularTotais(); salvarEstado();
 }
 
-export function excluirItem(id) {
+export function excluirItem(id, aoConcluir) {
   const el = document.querySelector(`.item[data-id="${id}"]`);
   const remover = () => {
     state.itens = state.itens.filter(i => i.id !== id);
     atualizarLista(); calcularTotais(); salvarEstado();
+    if (aoConcluir) aoConcluir(); // chamado APÓS o item sair do state
   };
   if (el) { el.classList.add('saindo'); el.addEventListener('animationend', remover, { once:true }); }
   else remover();
