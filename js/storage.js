@@ -25,7 +25,7 @@ export function carregarEstado() {
   try {
     const raw =
       localStorage.getItem('listaCompras_v2') ||
-      localStorage.getItem('listaCompras'); // migração da versão anterior
+      localStorage.getItem('listaCompras');
 
     if (raw) {
       const obj = JSON.parse(raw);
@@ -35,4 +35,14 @@ export function carregarEstado() {
   } catch (e) {
     console.warn('Erro ao carregar estado:', e);
   }
+}
+
+/**
+ * Aplica um objeto externo (vindo do Firebase) no state local.
+ * @param {Object} dados - { itens, temaAtual }
+ */
+export function aplicarEstadoExterno(dados) {
+  if (Array.isArray(dados.itens))          state.itens     = dados.itens;
+  if (typeof dados.temaAtual === 'string') state.temaAtual = dados.temaAtual;
+  salvarEstado();
 }
