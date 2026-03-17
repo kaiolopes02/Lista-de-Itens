@@ -303,8 +303,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
     if (acao === 'excluir') {
       if (editandoId === id) cancelarEdicao();
-      excluirItem(id);
-      sincronizarSeNecessario();
+      // sincronizar só APÓS a animação terminar e o item sair do state
+      excluirItem(id, sincronizarSeNecessario);
       return;
     }
     if (acao === 'editar') {
