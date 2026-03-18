@@ -73,6 +73,12 @@ export const ICONES = {
 
   // i círculo (info)
   infoCirculo: S(`<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>`),
+
+  // Relógio (histórico)
+  relogio: S(`<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>`),
+
+  // Arquivo / finalizar compra
+  arquivo: S(`<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>`),
 };
 
 export function icone(nome) {
