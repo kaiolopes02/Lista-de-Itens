@@ -5,23 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lista de Compras</title>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" type="image/png" href="assets/icon-192.png">
-  <link rel="apple-touch-icon" href="assets/icon-192.png">
   <link rel="manifest" href="site.webmanifest">
-  <meta name="theme-color" content="#2ecc71">
+  <meta name="theme-color" content="#2196f3">
 </head>
 <body>
 
+  <!-- Toast de notificação -->
   <div class="notificacao" id="notificacao" role="status" aria-live="polite">
     <div class="notif-icone info" id="notifIcone"></div>
     <span class="notif-texto" id="notificacaoTexto"></span>
     <button class="notif-fechar" id="btnFecharNotificacao" aria-label="Fechar notificação"></button>
   </div>
 
+  <!-- Modal de temas -->
   <div class="tema-overlay" id="temaOverlay" role="dialog" aria-modal="true">
     <div class="tema-modal">
       <h3 id="temaTitulo">Escolha um tema</h3>
       <div class="tema-grade" id="temaGrade"></div>
+    </div>
+  </div>
+
+  <!-- Modal de histórico -->
+  <div class="hist-overlay" id="histOverlay" role="dialog" aria-modal="true">
+    <div class="hist-modal">
+      <div class="hist-modal-header">
+        <h3 id="histTitulo">Histórico de Compras</h3>
+        <button class="btn-icone" id="btnFecharHistorico" title="Fechar"></button>
+      </div>
+      <div id="histConteudo" class="hist-conteudo"></div>
     </div>
   </div>
 
@@ -34,6 +45,7 @@
       </div>
       <div class="controles">
         <button class="btn-icone" id="btnTema"         title="Mudar tema"></button>
+        <button class="btn-icone" id="btnHistorico"    title="Histórico de compras"></button>
         <button class="btn-icone" id="btnCompartilhar" title="Compartilhar lista"></button>
         <button class="btn-icone" id="btnOrdenarNome"  title="Ordenar A–Z"></button>
         <button class="btn-icone" id="btnOrdenarData"  title="Mais recente"></button>
@@ -81,8 +93,8 @@
           <input type="number" id="quantidade" placeholder="1" min="1" required>
         </div>
         <div class="form-acoes">
-          <button type="submit"  id="botaoAcao"    class="btn btn-primario"></button>
-          <button type="button"  id="botaoCancelar" class="btn btn-cancelar" style="display:none"></button>
+          <button type="submit"  id="botaoAcao"     class="btn btn-primario"></button>
+          <button type="button"  id="botaoCancelar"  class="btn btn-cancelar" style="display:none"></button>
         </div>
       </form>
     </section>
@@ -91,7 +103,8 @@
       <div class="lista-header">
         <h2>Itens <span class="badge-contagem" id="badgeContagem">0</span></h2>
         <div class="lista-acoes">
-          <button class="btn-icone" id="btnLimparTodos" title="Limpar lista" style="display:none"></button>
+          <button class="btn-icone" id="btnFinalizarCompra" title="Finalizar compra e salvar no histórico" style="display:none"></button>
+          <button class="btn-icone" id="btnLimparTodos"     title="Limpar lista" style="display:none"></button>
         </div>
       </div>
       <div id="listaItens" class="lista-itens" role="list"></div>
