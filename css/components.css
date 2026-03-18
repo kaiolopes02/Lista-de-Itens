@@ -156,6 +156,38 @@
   border-color: var(--cor-erro);
 }
 
+.campo-select {
+  padding: 12px 14px;
+  border: 2px solid var(--cor-borda);
+  border-radius: var(--raio);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--cor-texto);
+  background: var(--cor-fundo);
+  width: 100%;
+  outline: none;
+  font-family: var(--fonte);
+  cursor: pointer;
+  transition: border-color var(--trans), box-shadow var(--trans), background var(--trans);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.campo-select:focus {
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 3px rgba(var(--cor-primaria-rgb), 0.15);
+  background-color: var(--cor-card);
+}
+
+.grupo-triplo {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 12px;
+}
+
 /* Ações do formulário */
 .form-acoes {
   display: flex;
