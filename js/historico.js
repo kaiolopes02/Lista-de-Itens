@@ -1,5 +1,5 @@
 /* ============================================================
-   HISTÓRICO — Modal de compras anteriores (acordeão)
+   HISTÓRICO — Modal de compras anteriores
    ============================================================ */
 import { carregarHistorico, removerEntradaHistorico } from './storage.js';
 import { icone } from './icones.js';
@@ -43,11 +43,10 @@ function renderizarHistorico() {
 
   conteudo.innerHTML = '';
 
-  historico.forEach((entrada, idx) => {
+  historico.forEach((entrada) => {
     const incluidos  = entrada.itens.filter(i => i.incluido !== false);
     const totalItens = incluidos.reduce((a, i) => a + i.quantidade, 0);
     const totalValor = incluidos.reduce((a, i) => a + i.preco * i.quantidade, 0);
-    const totalGeral = entrada.itens.reduce((a, i) => a + i.quantidade, 0);
 
     const linhasItens = entrada.itens.map(item => {
       const marcado  = item.incluido !== false;
@@ -61,49 +60,28 @@ function renderizarHistorico() {
         </div>`;
     }).join('');
 
-    // Primeira entrada começa aberta, demais fechadas
-    const aberta = idx === 0;
-
     const card = document.createElement('div');
-    card.className = 'hist-entrada' + (aberta ? ' aberta' : '');
+    card.className = 'hist-entrada';
     card.innerHTML = `
-      <button class="hist-entrada-header" type="button">
+      <div class="hist-entrada-header">
         <div class="hist-entrada-data">
           ${icone('relogio')}
-          <div>
-            <div class="hist-data-texto">${formatarData(entrada.data)}</div>
-            <div class="hist-resumo">${totalGeral} iten${totalGeral !== 1 ? 's' : ''} · ${fmt(totalValor)}</div>
-          </div>
+          <span>${formatarData(entrada.data)}</span>
         </div>
-        <div class="hist-header-acoes">
-          <span class="hist-chevron">${icone('chevron')}</span>
-          <button class="btn-acao excluir hist-btn-excluir"
-                  data-hist-id="${entrada.id}"
-                  title="Remover do histórico"
-                  type="button">
-            ${icone('lixeira')}
-          </button>
-        </div>
-      </button>
-
-      <div class="hist-corpo">
-        <div class="hist-itens">${linhasItens}</div>
-        <div class="hist-entrada-totais">
-          <span>${icone('cesto')} ${totalItens} iten${totalItens !== 1 ? 's' : ''} marcados</span>
-          <strong>${fmt(totalValor)}</strong>
-        </div>
+        <button class="btn-acao excluir hist-btn-excluir"
+                data-hist-id="${entrada.id}"
+                title="Remover do histórico"
+                type="button">
+          ${icone('lixeira')}
+        </button>
+      </div>
+      <div class="hist-itens">${linhasItens}</div>
+      <div class="hist-entrada-totais">
+        <span>${icone('cesto')} ${totalItens} iten${totalItens !== 1 ? 's' : ''} marcados</span>
+        <strong>${fmt(totalValor)}</strong>
       </div>`;
 
-    // Toggle acordeão
-    card.querySelector('.hist-entrada-header').addEventListener('click', (e) => {
-      // Não fecha ao clicar no botão excluir
-      if (e.target.closest('.hist-btn-excluir')) return;
-      card.classList.toggle('aberta');
-    });
-
-    // Excluir entrada
-    card.querySelector('.hist-btn-excluir').addEventListener('click', (e) => {
-      e.stopPropagation();
+    card.querySelector('.hist-btn-excluir').addEventListener('click', () => {
       removerEntradaHistorico(entrada.id);
       renderizarHistorico();
     });
