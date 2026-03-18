@@ -8,7 +8,7 @@ import { atualizarLista, calcularTotais,
 import { manipularItem, entrarModoEdicao,
          sairModoEdicao, toggleItem,
          excluirItem, toggleTodos,
-         limparTodos }                             from './itens.js';
+         limparTodos, atualizarLabelsUnidade }     from './itens.js';
 import { aplicarTema, carregarTema,
          abrirModalTema, fecharModalTema }         from './tema.js';
 import { mostrarNotificacao,
@@ -61,6 +61,7 @@ function injetarIcones() {
   set('iconeEtiqueta',        'etiqueta');
   set('iconeRecibo',          'recibo');
   set('iconeNome',            'etiqueta');
+  set('iconeUnidade',         'etiqueta');
   set('iconePreco',           'moedas');
   set('iconeQtd',             'hashtag');
   set('editBadgeIcone',       'editar');
@@ -248,6 +249,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (sucesso) { cancelarEdicao(); sincronizarSeNecessario(); }
   });
   document.getElementById('botaoCancelar').addEventListener('click', cancelarEdicao);
+  document.getElementById('unidade').addEventListener('change', atualizarLabelsUnidade);
 
   /* Notificação */
   document.getElementById('btnFecharNotificacao').addEventListener('click', fecharNotificacao);
