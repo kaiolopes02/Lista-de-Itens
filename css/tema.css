@@ -89,6 +89,7 @@
   .form-card          { padding: 18px; }
   .grupo-duplo        { grid-template-columns: 1fr; }
   .grupo-triplo       { grid-template-columns: 1fr 1fr; }
+  .grupo-triplo       { grid-template-columns: 1fr 1fr; }
 
   .lista-header       { padding: 14px 16px 0; }
   .lista-itens        { padding: 12px 14px 16px; }
