@@ -18,8 +18,10 @@ export function atualizarLista() {
   const btnLimpar = document.getElementById('btnLimparTodos');
   if (!lista) return;
 
+  const btnFinalizar = document.getElementById('btnFinalizarCompra');
   badge.textContent       = state.itens.length;
-  btnLimpar.style.display = state.itens.length ? 'flex' : 'none';
+  btnLimpar.style.display  = state.itens.length ? 'flex' : 'none';
+  if (btnFinalizar) btnFinalizar.style.display = state.itens.length ? 'flex' : 'none';
   lista.innerHTML = '';
 
   if (!state.itens.length) {
