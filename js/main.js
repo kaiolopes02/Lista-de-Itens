@@ -67,7 +67,7 @@ function injetarIcones() {
   set('btnFecharNotificacao', 'fechar');
   set('btnFecharHistorico',   'fechar');
   const temaTitulo = document.getElementById('temaTitulo');
-  if (temaTitulo) temaTitulo.innerHTML = icone('relogio') + ' Histórico' ;
+  if (temaTitulo) temaTitulo.innerHTML = icone('paleta') + ' Escolha um tema';
   const histTitulo = document.getElementById('histTitulo');
   if (histTitulo) histTitulo.innerHTML = icone('relogio') + ' Histórico de Compras';
   atualizarBotaoForm(false);
