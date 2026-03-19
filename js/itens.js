@@ -49,10 +49,18 @@ export function entrarModoEdicao(item) {
 }
 
 export function sairModoEdicao() {
+  // Guarda a unidade selecionada antes do reset
+  const unidadeAtual = document.getElementById('unidade')?.value || 'un';
+
   document.getElementById('formItem').reset();
+
+  // Restaura a unidade após o reset (não reseta junto com o form)
+  const sel = document.getElementById('unidade');
+  if (sel) sel.value = unidadeAtual;
+
   document.getElementById('botaoCancelar').style.display = 'none';
   document.getElementById('formCard').classList.remove('editando');
-  atualizarLabelsUnidade(); // reset dos labels ao limpar
+  atualizarLabelsUnidade();
 }
 
 export function manipularItem(e, editandoId) {
