@@ -67,8 +67,8 @@
   --cor-fundo:         #0f1117;
   --cor-card:          #1a1f2e;
   --cor-texto:         #e8eaf6;
-  --cor-texto-suave:   #9da3b4;
-  --cor-borda:         #2a3040;
+  --cor-texto-suave:   #b0b8cc;
+  --cor-borda:         #3a4058;
   --sombra:            0 2px 16px rgba(0, 0, 0, 0.4);
 }
 
@@ -88,7 +88,6 @@
 
   .form-card          { padding: 18px; }
   .grupo-duplo        { grid-template-columns: 1fr; }
-  .grupo-triplo       { grid-template-columns: 1fr 1fr; }
   .grupo-triplo       { grid-template-columns: 1fr 1fr; }
 
   .lista-header       { padding: 14px 16px 0; }

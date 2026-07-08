@@ -89,7 +89,7 @@ export function calcularTotais() {
   // Para "Total de itens": soma unidades inteiras + soma pesos em kg (mostra separado se misto)
   const totalUn    = incluidos.filter(i => (i.unidade || 'un') === 'un').reduce((a, i) => a + i.quantidade, 0);
   const totalKg    = incluidos.filter(i => i.unidade === 'kg').reduce((a, i) => a + i.quantidade, 0);
-  const totalValor = incluidos.reduce((a, i) => a + i.preco * i.quantidade, 0);
+  const totalValor = Math.round(incluidos.reduce((a, i) => a + i.preco * i.quantidade * 100, 0)) / 100; // ponytail: evita acúmulo float
   const progPct    = state.itens.length ? (incluidos.length / state.itens.length) * 100 : 0;
 
   // Monta texto do total de itens

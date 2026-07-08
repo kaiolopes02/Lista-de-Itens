@@ -242,7 +242,6 @@
 .item:hover {
   box-shadow: var(--sombra-hover);
   border-color: rgba(var(--cor-primaria-rgb), 0.3);
-  transform: translateX(2px);
 }
 
 .item:hover::before { opacity: 1; }
@@ -263,8 +262,8 @@
 
 /* Checkbox do item */
 .item-check {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   border: 2px solid var(--cor-borda);
   background: var(--cor-fundo);
@@ -288,8 +287,9 @@
 
 .item-check:hover {
   border-color: var(--cor-primaria);
-  transform: scale(1.08);
 }
+
+.item-check:active { transform: scale(0.95); }
 
 /* Info do item */
 .item-info { flex: 1; min-width: 0; }

@@ -31,7 +31,10 @@
   background: rgba(var(--cor-primaria-rgb), 0.08);
   border-color: var(--cor-primaria);
   color: var(--cor-primaria);
-  transform: translateY(-1px);
+}
+
+.btn-icone:active {
+  transform: scale(0.95);
 }
 
 .btn-icone.ativo {
@@ -42,8 +45,8 @@
 
 /* Botões de ação dos itens */
 .btn-acao {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   border: 1.5px solid transparent;
   background: transparent;
@@ -57,6 +60,7 @@
 }
 
 .btn-acao:hover { border-color: var(--cor-borda); }
+.btn-acao:active { transform: scale(0.92); }
 
 .btn-acao.editar:hover {
   background: rgba(var(--cor-primaria-rgb), 0.10);
@@ -249,6 +253,8 @@
   background: var(--cor-borda);
   color: var(--cor-texto);
 }
+
+.btn-cancelar:active { transform: scale(0.97); }
 
 /* ============================================================
    MODAL DE TEMAS

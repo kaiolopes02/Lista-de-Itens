@@ -73,7 +73,7 @@ export function manipularItem(e, editandoId) {
 
   if (!nome)                     { mostrarNotificacao('Informe o nome do item.', 'erro');  return false; }
   if (isNaN(preco) || preco < 0) { mostrarNotificacao('Preço inválido.', 'erro');          return false; }
-  if (isNaN(qtd)   || qtd <= 0)  { mostrarNotificacao('Quantidade deve ser maior que 0.', 'erro'); return false; }
+  if (isNaN(qtd) || qtd < 0.001) { mostrarNotificacao('Quantidade deve ser maior que 0.', 'erro'); return false; }
 
   const duplicado = state.itens.find(
     i => i.nome.toLowerCase() === nome.toLowerCase() && i.id !== editandoId
