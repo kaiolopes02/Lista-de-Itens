@@ -106,6 +106,8 @@ export async function publicarEstado(estado) {
       temaAtual: estado.temaAtual,
       ts:        Date.now(), // timestamp para desempate
     });
+    // ponytail: setTimeout libera flag após onValue processar; evita race com múltiplas publicações
+    setTimeout(() => { _ignorarProximaAtualizacao = false; }, 500);
   } catch (e) {
     console.error('Erro ao publicar estado:', e);
     _ignorarProximaAtualizacao = false;

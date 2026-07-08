@@ -45,7 +45,12 @@ function renderizarHistorico() {
 
   historico.forEach((entrada) => {
     const incluidos  = entrada.itens.filter(i => i.incluido !== false);
-    const totalItens = incluidos.reduce((a, i) => a + i.quantidade, 0);
+    const totalUn    = incluidos.filter(i => (i.unidade || 'un') === 'un').reduce((a, i) => a + i.quantidade, 0);
+    const totalKg    = incluidos.filter(i => i.unidade === 'kg').reduce((a, i) => a + i.quantidade, 0);
+    const partesItens = [];
+    if (totalUn > 0) partesItens.push(totalUn + ' un');
+    if (totalKg > 0) partesItens.push(totalKg.toLocaleString('pt-BR', { maximumFractionDigits: 3 }) + ' kg');
+    const totalItensTexto = partesItens.length ? partesItens.join(' + ') : '0';
     const totalValor = incluidos.reduce((a, i) => a + i.preco * i.quantidade, 0);
 
     const linhasItens = entrada.itens.map(item => {
@@ -55,7 +60,7 @@ function renderizarHistorico() {
         <div class="hist-item ${marcado ? '' : 'hist-item-desmarcado'}">
           <span class="hist-item-check">${marcado ? icone('check') : ''}</span>
           <span class="hist-item-nome">${escHtml(item.nome)}</span>
-          <span class="hist-item-detalhe">${item.quantidade} un × ${fmt(item.preco)}</span>
+          <span class="hist-item-detalhe">${item.quantidade} ${item.unidade || 'un'} × ${fmt(item.preco)}</span>
           <span class="hist-item-subtotal">${fmt(subtotal)}</span>
         </div>`;
     }).join('');
@@ -77,7 +82,7 @@ function renderizarHistorico() {
       </div>
       <div class="hist-itens">${linhasItens}</div>
       <div class="hist-entrada-totais">
-        <span>${icone('cesto')} ${totalItens} iten${totalItens !== 1 ? 's' : ''} marcados</span>
+        <span>${icone('cesto')} ${totalItensTexto} marcado${partesItens.length === 1 && (totalUn === 1 || totalKg === 1) ? '' : 's'}</span>
         <strong>${fmt(totalValor)}</strong>
       </div>`;
 

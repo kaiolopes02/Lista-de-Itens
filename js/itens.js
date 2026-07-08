@@ -45,7 +45,7 @@ export function entrarModoEdicao(item) {
   document.getElementById('editNomeLabel').textContent   = item.nome;
   document.getElementById('formCard').classList.add('editando');
   document.getElementById('nome').focus();
-  document.getElementById('formCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('formCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); // ponytail: center evita colisão com toast fixo no topo
 }
 
 export function sairModoEdicao() {
@@ -96,19 +96,20 @@ export function manipularItem(e, editandoId) {
 export function toggleItem(id) {
   const item = state.itens.find(i => i.id === id);
   if (!item) return;
-  item.incluido = item.incluido === false;
+  item.incluido = !(item.incluido !== false); // ponytail: inverte estado exibido, trata undefined como incluído
   atualizarLista(); calcularTotais(); salvarEstado();
 }
 
 export function excluirItem(id, aoConcluir) {
   const el = document.querySelector(`.item[data-id="${id}"]`);
-  const remover = () => {
-    state.itens = state.itens.filter(i => i.id !== id);
+  // ponytail: remove do state imediatamente; animação é só cosmética
+  state.itens = state.itens.filter(i => i.id !== id);
+  const finalizar = () => {
     atualizarLista(); calcularTotais(); salvarEstado();
     if (aoConcluir) aoConcluir();
   };
-  if (el) { el.classList.add('saindo'); el.addEventListener('animationend', remover, { once: true }); }
-  else remover();
+  if (el) { el.classList.add('saindo'); el.addEventListener('animationend', finalizar, { once: true }); }
+  else finalizar();
 }
 
 export function toggleTodos() {

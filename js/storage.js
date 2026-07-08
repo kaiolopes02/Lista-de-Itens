@@ -87,7 +87,7 @@ export function finalizarCompra() {
 
   // Insere no início e limita ao máximo
   historico.unshift(entrada);
-  if (historico.length > MAX_HISTORICO) historico.length = MAX_HISTORICO;
+  while (historico.length > MAX_HISTORICO) historico.pop(); // ponytail: pop remove o mais antigo (final), unshift insere no início
 
   try {
     localStorage.setItem(CHAVE_HISTORICO, JSON.stringify(historico));

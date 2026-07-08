@@ -159,7 +159,9 @@ async function compartilhar() {
     try {
       await navigator.share({ title: 'Lista de Compras', text: texto + '\n\n🔗 Acesse e edite a lista:', url: link });
       return;
-    } catch (err) { if (err.name === 'AbortError') return; }
+    } catch (err) {
+      if (err.name === 'AbortError') { mostrarNotificacao('Compartilhamento cancelado.', 'info'); return; }
+    }
   }
   try {
     await navigator.clipboard.writeText(`${texto}\n\n🔗 Acesse e edite a lista:\n${link}`);
