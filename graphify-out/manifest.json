@@ -1,0 +1,62 @@
+{
+  "js/historico.js": {
+    "mtime": 1783472925.9187138,
+    "ast_hash": "53922dc8447aad1a024c8892119557f1",
+    "semantic_hash": "53922dc8447aad1a024c8892119557f1"
+  },
+  "js/icones.js": {
+    "mtime": 1774293394.1389537,
+    "ast_hash": "64c26f0b3e09544f0b5740beb36b7f22",
+    "semantic_hash": "64c26f0b3e09544f0b5740beb36b7f22"
+  },
+  "js/itens.js": {
+    "mtime": 1783473699.8956244,
+    "ast_hash": "6a82d92e1e93dfe95dc8ac0ff0c11f33",
+    "semantic_hash": "6a82d92e1e93dfe95dc8ac0ff0c11f33"
+  },
+  "js/lista.js": {
+    "mtime": 1783473699.8956244,
+    "ast_hash": "68fda905239ebbdcc0134237f9edfef5",
+    "semantic_hash": "68fda905239ebbdcc0134237f9edfef5"
+  },
+  "js/main.js": {
+    "mtime": 1783472810.7859807,
+    "ast_hash": "e0271b77db0aca143c79fb6882e94587",
+    "semantic_hash": "e0271b77db0aca143c79fb6882e94587"
+  },
+  "js/notificacao.js": {
+    "mtime": 1773450397.8562827,
+    "ast_hash": "48f58d1a7905d74a30267166e5816d6f",
+    "semantic_hash": "48f58d1a7905d74a30267166e5816d6f"
+  },
+  "js/storage.js": {
+    "mtime": 1783472695.3383727,
+    "ast_hash": "093ad8bad383b6f9f87f23b162676d5a",
+    "semantic_hash": "093ad8bad383b6f9f87f23b162676d5a"
+  },
+  "js/sync.js": {
+    "mtime": 1783472772.4064047,
+    "ast_hash": "f7c0a62ed5a2b37749bf166da61f1ad7",
+    "semantic_hash": "f7c0a62ed5a2b37749bf166da61f1ad7"
+  },
+  "js/tema.js": {
+    "mtime": 1773450397.8213756,
+    "ast_hash": "48ec1ab2b8d895e9f4ddaf3effabcf29",
+    "semantic_hash": "48ec1ab2b8d895e9f4ddaf3effabcf29"
+  },
+  "index.html": {
+    "mtime": 1774293394.1358192,
+    "ast_hash": "8a2e57f99b68842eed01d33656663065",
+    "semantic_hash": "8a2e57f99b68842eed01d33656663065"
+  },
+  "assets/icon-192.png": {
+    "mtime": 1773184002.4236917,
+    "ast_hash": "3e6616293a4ba538911894077a6391c4",
+    "semantic_hash": "3e6616293a4ba538911894077a6391c4"
+  },
+  "assets/icon-512.png": {
+    "mtime": 1773184002.438407,
+    "ast_hash": "8f8f064b55ede00d4da5863d2fbe61d3",
+    "semantic_hash": "8f8f064b55ede00d4da5863d2fbe61d3"
+  }
+}
