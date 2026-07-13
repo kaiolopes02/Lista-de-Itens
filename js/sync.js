@@ -6,6 +6,7 @@
    Veja o arquivo GUIA_FIREBASE.md para instruções completas.
    ============================================================ */
 
+import { state } from './storage.js';
 import { initializeApp }                    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, set, onValue,
          off }                              from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
@@ -26,7 +27,7 @@ let _app      = null;
 let _db       = null;
 let _salaId   = null;
 let _salaRef  = null;
-let _ignorarProximaAtualizacao = false; // evita loop ao publicar localmente
+
 
 /** Inicializa o Firebase (chamado uma vez na startup) */
 export function inicializarFirebase() {
@@ -98,19 +99,14 @@ export async function publicarEstado(estado) {
   if (!_db || !_salaId) return;
 
   // Sinaliza que a próxima atualização recebida é nossa — não re-renderiza
-  _ignorarProximaAtualizacao = true;
-
-  try {
-    await set(_salaRef, {
+  try { await set(_salaRef, {
       itens:     estado.itens,
       temaAtual: estado.temaAtual,
       ts:        Date.now(), // timestamp para desempate
     });
-    // ponytail: setTimeout libera flag após onValue processar; evita race com múltiplas publicações
-    setTimeout(() => { _ignorarProximaAtualizacao = false; }, 500);
+    
   } catch (e) {
     console.error('Erro ao publicar estado:', e);
-    _ignorarProximaAtualizacao = false;
   }
 }
 
@@ -122,14 +118,12 @@ async function _conectarSala(onUpdate) {
   _salaRef = ref(_db, `listas/${_salaId}`);
 
   onValue(_salaRef, (snapshot) => {
-    if (_ignorarProximaAtualizacao) {
-      _ignorarProximaAtualizacao = false;
-      return;
-    }
-
     const dados = snapshot.val();
     if (dados && Array.isArray(dados.itens)) {
-      onUpdate(dados); // repassa para o main.js aplicar no state e re-renderizar
+      // ponytail: compara com state local; se identico ignora (echo da propria publicacao)
+      if (JSON.stringify(dados.itens) === JSON.stringify(state.itens) &&
+          dados.temaAtual === state.temaAtual) return;
+      onUpdate(dados);
     }
   });
 }

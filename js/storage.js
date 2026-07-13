@@ -46,7 +46,12 @@ export function carregarEstado() {
  * @param {Object} dados - { itens, temaAtual }
  */
 export function aplicarEstadoExterno(dados) {
-  if (Array.isArray(dados.itens))          state.itens     = dados.itens;
+  if (Array.isArray(dados.itens)) {
+    // ponytail: filtra itens malformados vindos de URL/Firebase
+    state.itens = dados.itens.filter(item =>
+      item && typeof item.id === 'number' && typeof item.nome === 'string' && item.nome.trim()
+    );
+  }
   if (typeof dados.temaAtual === 'string') state.temaAtual = dados.temaAtual;
   salvarEstado();
 }

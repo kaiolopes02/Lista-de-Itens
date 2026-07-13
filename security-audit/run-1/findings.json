@@ -1,0 +1,34 @@
+[
+  {
+    "description": "innerHTML com salaId não sanitizado vindo de URL param. Escape aplicado.",
+    "category": "injection",
+    "file": "js/main.js",
+    "line": 90,
+    "severity": "HIGH",
+    "cwe": "CWE-79",
+    "title": "XSS via parâmetro sala em mostrarIndicadorSala",
+    "id": "RUN1-001",
+    "status": "fixed"
+  },
+  {
+    "line": 40,
+    "status": "fixed",
+    "description": "Flag booleana com setTimeout 500ms perdia publishes rápidos. Substituído por comparação JSON.",
+    "file": "js/sync.js",
+    "severity": "BUG",
+    "id": "RUN1-002",
+    "title": "Race condition em _ignorarProximaAtualizacao",
+    "category": "race-condition"
+  },
+  {
+    "description": "Itens vindos de URL/Firebase injetados sem verificar campos obrigatórios. Filtro aplicado.",
+    "category": "validation",
+    "file": "js/storage.js",
+    "line": 48,
+    "severity": "MEDIUM",
+    "cwe": "CWE-20",
+    "title": "Dados externos sem validação em aplicarEstadoExterno",
+    "id": "RUN1-003",
+    "status": "fixed"
+  }
+]

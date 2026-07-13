@@ -87,6 +87,7 @@ export function sincronizarSeNecessario() {
 }
 
 function mostrarIndicadorSala(salaId) {
+  const safeId = salaId.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   let badge = document.getElementById('salaIndicador');
   if (!badge) {
     badge = document.createElement('div');
@@ -105,7 +106,7 @@ function mostrarIndicadorSala(salaId) {
   badge.innerHTML = `
     <span style="width:8px;height:8px;background:#4eff91;border-radius:50%;
       display:inline-block;box-shadow:0 0 6px #4eff91;animation:piscar 1.5s infinite"></span>
-    Sala: <strong>${salaId}</strong>
+    Sala: <strong>${safeId}</strong>
   `;
   if (!document.getElementById('estiloPiscar')) {
     const s = document.createElement('style');
