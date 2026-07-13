@@ -76,6 +76,7 @@ export async function criarSala(estado, onUpdate) {
  */
 export async function entrarSala(salaId, onUpdate) {
   if (!_db) return false;
+  if (typeof salaId !== 'string' || !/^[A-Za-z0-9_-]{2,64}$/.test(salaId)) return false; // ponytail: valida a chave do path Firebase, evita path-traversal na ref (/[].$)
   _salaId = salaId;
   await _conectarSala(onUpdate);
   return true;

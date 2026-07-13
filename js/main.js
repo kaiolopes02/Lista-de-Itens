@@ -205,9 +205,7 @@ async function carregarDadosUrl() {
     try {
       const obj = JSON.parse(decodeURIComponent(atob(dadosUrl)));
       if (Array.isArray(obj.itens)) {
-        state.itens     = obj.itens;
-        state.temaAtual = typeof obj.temaAtual === 'string' ? obj.temaAtual : 'azul';
-        salvarEstado();
+        aplicarEstadoExterno(obj); // ponytail: valida itens via storage.js (igual ao path Firebase), fecha bypass do filtro RUN1-003
         mostrarNotificacao('Lista carregada do link!', 'sucesso');
         return true;
       }

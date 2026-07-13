@@ -1,0 +1,35 @@
+[
+  {
+    "id": "RUN2-001",
+    "title": "Path ?data= injeta itens sem validacao (bypass do filtro run-1)",
+    "severity": "HIGH",
+    "category": "validation",
+    "cwe": "CWE-20",
+    "file": "js/main.js",
+    "line": 208,
+    "status": "fixed",
+    "description": "Branch ?data= fazia state.itens=obj.itens sem validar campos (filtro da run-1 soh existia no path Firebase). Links forcados causavam crash em escHtml/atualizarLista e persistiam dados corrompidos. Correcao: rotear por aplicarEstadoExterno(obj)."
+  },
+  {
+    "id": "RUN2-002",
+    "title": "entrarSala aceita salaId arbitrario -> injecao de path/chave na ref Firebase",
+    "severity": "MEDIUM",
+    "category": "injection",
+    "cwe": "CWE-22",
+    "file": "js/sync.js",
+    "line": 79,
+    "status": "fixed",
+    "description": "entrarSala montava ref(listas/+salaId) sem validar; ?sala=a%2Fb criava ref aninhada em outra sala. Run-1 tratou soh o XSS de exibicao. Correcao: regex ^[A-Za-z0-9_-]{2,64}$ antes de montar a ref."
+  },
+  {
+    "id": "RUN2-003",
+    "title": "Nenhum arquivo de Realtime Database Security Rules no repositorio",
+    "severity": "HIGH",
+    "category": "rbac",
+    "cwe": "CWE-732",
+    "file": "database.rules.json",
+    "line": 1,
+    "status": "fixed",
+    "description": "App sem auth grava em listas/$salaId; seguranca dependia de regras nao-versionadas no console (provavelmente abertas). Criado database.rules.json com escopo listas/$salaId, validacao de schema por item, $other proibido e bloqueio do resto. Residual: IDOR anonima requer Firebase Auth."
+  }
+]
