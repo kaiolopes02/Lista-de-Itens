@@ -368,7 +368,7 @@ O item não possui `id` numérico e deve ser descartado por `aplicarEstadoExtern
 
 ### Sala descartável do Release Gate
 
-Use a URL do banco e um identificador aleatório no formato `verify-<timestamp>-<random>`. O script abaixo executa as quatro verificações e mantém o `DELETE` no `finally`, portanto a limpeza é tentada mesmo quando uma asserção falha:
+Use a URL do banco e um identificador aleatório no formato `verify-<timestamp>-<random>`. O script abaixo executa as quatro verificações e mantém o `DELETE` no `finally`, portanto a limpeza é tentada mesmo quando uma asserção falha. A API REST do Firebase Realtime Database responde HTTP 401 (Unauthorized) quando as Security Rules negam a operação:
 
 ```powershell
 $base = 'https://lista-de-itens-2a16b-default-rtdb.firebaseio.com'
@@ -403,7 +403,7 @@ try {
   Assert-Status $response @(200) 'GET da sala'
   if ($response.Body -notmatch 'Item de verificação') { throw 'GET da sala: payload não persistido' }
   $response = Invoke-Rtdb PUT $room $invalid
-  Assert-Status $response @(400) 'PUT inválido'
+  Assert-Status $response @(401) 'PUT inválido'
   $response = Invoke-Rtdb GET "$base/.json"
   Assert-Status $response @(401) 'GET da raiz'
 } finally {

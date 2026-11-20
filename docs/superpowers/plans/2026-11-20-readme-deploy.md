@@ -266,7 +266,7 @@ Usar um ID aleatório no formato `verify-<timestamp>-<random>`:
 
 1. `PUT` em `/listas/<id>.json` com um estado mínimo válido; esperar HTTP 200.
 2. `GET` no mesmo caminho; esperar HTTP 200 e o payload persistido.
-3. `PUT` no mesmo caminho com `preco: -1` e um campo extra; esperar HTTP 400/Permission denied.
+3. `PUT` no mesmo caminho com `preco: -1` e um campo extra; esperar HTTP 401/Permission denied.
 4. `GET` na raiz `/.json`; esperar HTTP 401/Permission denied.
 5. `DELETE` em `/listas/<id>.json`; esperar HTTP 200.
 6. `GET` no caminho descartável; esperar payload `null`.
