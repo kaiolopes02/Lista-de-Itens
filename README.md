@@ -6,7 +6,7 @@ Aplicação web estática para organizar compras por item, preço unitário, qua
 - **Projeto Firebase:** `lista-de-itens-2a16b`
 - **Status:** publicado no GitHub Pages, com o Realtime Database usado no modo de salas compartilhadas.
 
-> O manifesto habilita a instalação da aplicação em navegadores compatíveis, mas o projeto **não possui service worker**. Portanto, não há garantia de funcionamento offline completo. A configuração Web do Firebase é carregada por CDN.
+> O manifesto habilita a instalação da aplicação em navegadores compatíveis, mas o projeto **não possui service worker**. Portanto, não há garantia de funcionamento offline completo. O SDK Web do Firebase é carregado por CDN, e a configuração da aplicação está em `js/sync.js`.
 
 ## Índice
 
@@ -73,7 +73,7 @@ flowchart LR
     Q[Link ?data=] --> M
 ```
 
-O navegador carrega `index.html`, que registra os eventos e importa os módulos ESM. O estado em memória é atualizado pelos módulos, salvo em `localStorage` e, quando existe uma sala ativa, publicado no Firebase. As alterações remotas retornam ao mesmo estado e são renderizadas novamente na interface.
+O navegador carrega `index.html`, que carrega `js/main.js`; `js/main.js` importa os módulos ESM e registra os eventos. O estado em memória é atualizado pelos módulos, salvo em `localStorage` e, quando existe uma sala ativa, publicado no Firebase. As alterações remotas retornam ao mesmo estado e são renderizadas novamente na interface.
 
 ## Estrutura do projeto
 
