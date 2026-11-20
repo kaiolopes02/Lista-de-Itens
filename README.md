@@ -313,7 +313,7 @@ try {
 
 ```powershell
 'firebase.json', 'database.rules.json', 'site.webmanifest' |
-  ForEach-Object { Get-Content $_ -Raw | ConvertFrom-Json | Out-Null }
+  ForEach-Object { Get-Content $_ -Raw | ConvertFrom-Json -ErrorAction Stop | Out-Null }
 ```
 
 ### HTTP local
@@ -368,18 +368,55 @@ O item não possui `id` numérico e deve ser descartado por `aplicarEstadoExtern
 
 ### Sala descartável do Release Gate
 
-Use a URL do banco e um identificador aleatório no formato `verify-<timestamp>-<random>`. A sala deve ser removida ao final, mesmo quando uma asserção falhar.
+Use a URL do banco e um identificador aleatório no formato `verify-<timestamp>-<random>`. O script abaixo executa as quatro verificações e mantém o `DELETE` no `finally`, portanto a limpeza é tentada mesmo quando uma asserção falha:
 
-| Passo | Requisição | Resultado esperado |
-|---|---|---|
-| 1 | `PUT` em `/listas/<id>.json` com um estado mínimo válido | HTTP 200 |
-| 2 | `GET` no mesmo caminho | HTTP 200 e payload persistido |
-| 3 | `PUT` com `preco: -1` e um campo extra | HTTP 400 ou Permission denied |
-| 4 | `GET` em `/.json` | HTTP 401 ou Permission denied |
-| 5 | `DELETE` em `/listas/<id>.json` | HTTP 200 |
-| 6 | `GET` em `/listas/<id>.json` | payload `null` |
+```powershell
+$base = 'https://lista-de-itens-2a16b-default-rtdb.firebaseio.com'
+$id = "verify-$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())-$([guid]::NewGuid().ToString('N').Substring(0,8))"
+$room = "$base/listas/$id.json"
 
-A URL efetiva usa `https://lista-de-itens-2a16b-default-rtdb.firebaseio.com`. O teste valida as regras ativas, não apenas o arquivo local, e não deve deixar resíduos em produção.
+function Invoke-Rtdb([string]$Method, [string]$Uri, [string]$Body = '') {
+  $params = @{ Method = $Method; Uri = $Uri; UseBasicParsing = $true }
+  if ($Body) { $params.Body = $Body; $params.ContentType = 'application/json' }
+  try {
+    $response = Invoke-WebRequest @params
+    return [pscustomobject]@{ Status = [int]$response.StatusCode; Body = $response.Content }
+  } catch {
+    if (-not $_.Exception.Response) { throw }
+    return [pscustomobject]@{ Status = [int]$_.Exception.Response.StatusCode; Body = $_.ErrorDetails.Message }
+  }
+}
+
+function Assert-Status($Response, [int[]]$Expected, [string]$Step) {
+  if ($Response.Status -notin $Expected) {
+    throw "${Step}: HTTP $($Response.Status), esperado $($Expected -join '/')"
+  }
+}
+
+$valid = @{ itens = @(@{ id = 1; nome = 'Item de verificação'; preco = 1; quantidade = 1; unidade = 'un'; incluido = $true }); temaAtual = 'azul'; ts = 1 } | ConvertTo-Json -Depth 5 -Compress
+$invalid = @{ itens = @(@{ id = 2; nome = 'Item inválido'; preco = -1; quantidade = 1; unidade = 'un'; incluido = $true; extra = 'bloqueado' }); temaAtual = 'azul'; ts = 2 } | ConvertTo-Json -Depth 5 -Compress
+
+try {
+  $response = Invoke-Rtdb PUT $room $valid
+  Assert-Status $response @(200) 'PUT válido'
+  $response = Invoke-Rtdb GET $room
+  Assert-Status $response @(200) 'GET da sala'
+  if ($response.Body -notmatch 'Item de verificação') { throw 'GET da sala: payload não persistido' }
+  $response = Invoke-Rtdb PUT $room $invalid
+  Assert-Status $response @(400) 'PUT inválido'
+  $response = Invoke-Rtdb GET "$base/.json"
+  Assert-Status $response @(401) 'GET da raiz'
+} finally {
+  $cleanup = Invoke-Rtdb DELETE $room
+  Assert-Status $cleanup @(200) 'DELETE de limpeza'
+}
+
+$response = Invoke-Rtdb GET $room
+Assert-Status $response @(200) 'GET após limpeza'
+if ($response.Body.Trim() -ne 'null') { throw 'Sala descartável ainda contém dados' }
+```
+
+O teste valida as regras ativas, não apenas o arquivo local. Se o `DELETE` de limpeza falhar, o comando termina com erro e a sala deve ser removida manualmente.
 
 ## Segurança
 
