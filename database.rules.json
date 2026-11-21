@@ -6,11 +6,12 @@
         ".write": true,
         "itens": {
           "$idx": {
+            ".validate": "newData.hasChildren(['id','nome','preco','quantidade','unidade','incluido'])",
             "id": {
-              ".validate": "newData.isNumber()"
+              ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() % 1 === 0"
             },
             "nome": {
-              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 120"
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 120 && newData.val().matches(/\\S/)"
             },
             "preco": {
               ".validate": "newData.isNumber() && newData.val() >= 0"
@@ -30,7 +31,7 @@
           }
         },
         "temaAtual": {
-          ".validate": "newData.isString() && newData.val().length <= 32"
+          ".validate": "newData.isString() && newData.val().matches(/^(azul|verde|violeta|vermelho|laranja|amarelo|anil|rosa|escuro)$/)"
         },
         "ts": {
           ".validate": "newData.isNumber()"
