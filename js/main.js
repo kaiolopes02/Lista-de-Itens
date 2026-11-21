@@ -1,26 +1,28 @@
 /* ============================================================
    MAIN — Inicialização e wiring de eventos
    ============================================================ */
-import { state, carregarEstado, salvarEstado,
-         aplicarEstadoExterno, finalizarCompra }  from './storage.js';
+import { state, carregarEstado, prepararEstadoExterno,
+         substituirEstado, finalizarCompra }        from './storage.js';
 import { atualizarLista, calcularTotais,
-         ordenarPorNome, ordenarPorData }          from './lista.js';
+         ordenarPorNome, ordenarPorData }           from './lista.js';
 import { manipularItem, entrarModoEdicao,
          sairModoEdicao, toggleItem,
          excluirItem, toggleTodos,
-         limparTodos, atualizarLabelsUnidade }     from './itens.js';
+         limparTodos, atualizarLabelsUnidade }      from './itens.js';
 import { aplicarTema, carregarTema,
-         abrirModalTema, fecharModalTema }         from './tema.js';
+         abrirModalTema, fecharModalTema }          from './tema.js';
 import { mostrarNotificacao,
-         fecharNotificacao }                       from './notificacao.js';
-import { icone }                                   from './icones.js';
+         fecharNotificacao }                        from './notificacao.js';
+import { icone }                                    from './icones.js';
 import { inicializarFirebase, criarSala,
          entrarSala, publicarEstado,
-         getSalaId, firebaseConfigurado }          from './sync.js';
-import { abrirHistorico, fecharHistorico }         from './historico.js';
+         getSalaId, firebaseConfigurado }           from './sync.js';
+import { abrirHistorico, fecharHistorico }          from './historico.js';
+import { codificarSnapshot, decodificarSnapshot }   from './validacao.js';
 
 /* ── Estado de edição ─────────────────────────────────────── */
 let editandoId = null;
+let avisoFalhaSync = false;
 
 function iniciarEdicao(item) {
   editandoId = item.id;
@@ -76,56 +78,55 @@ function injetarIcones() {
 
 /* ── Sincronização Firebase ───────────────────────────────── */
 function aoReceberAtualizacaoRemota(dados) {
-  aplicarEstadoExterno(dados);
+  const normalizado = prepararEstadoExterno(dados, { itensOpcionais: true });
+  if (!normalizado) return;
+  substituirEstado(normalizado);
   aplicarTema(state.temaAtual);
   atualizarLista();
   calcularTotais();
 }
 
 export function sincronizarSeNecessario() {
-  if (getSalaId()) publicarEstado(state);
+  if (!getSalaId()) return;
+  publicarEstado(state).then(ok => {
+    if (ok || avisoFalhaSync) return;
+    avisoFalhaSync = true;
+    mostrarNotificacao('Sem conexão com a sala: a alteração ficou só neste dispositivo.', 'erro');
+  });
 }
 
 function mostrarIndicadorSala(salaId) {
-  const safeId = salaId.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   let badge = document.getElementById('salaIndicador');
   if (!badge) {
     badge = document.createElement('div');
     badge.id = 'salaIndicador';
-    badge.style.cssText = `
-      position:fixed;bottom:16px;right:16px;
-      background:var(--cor-primaria);color:#fff;
-      padding:8px 14px;border-radius:999px;
-      font-size:0.78rem;font-weight:600;
-      box-shadow:0 4px 12px rgba(0,0,0,0.2);
-      z-index:100;display:flex;align-items:center;gap:6px;
-      font-family:var(--fonte);
-    `;
+    badge.className = 'sala-indicador';
+
+    const ponto = document.createElement('span');
+    ponto.className = 'sala-ponto';
+    ponto.setAttribute('aria-hidden', 'true');
+
+    const rotulo = document.createElement('span');
+    rotulo.append(document.createTextNode('Sala: '));
+    const forte = document.createElement('strong');
+    rotulo.appendChild(forte);
+
+    badge.append(ponto, rotulo);
     document.body.appendChild(badge);
   }
-  badge.innerHTML = `
-    <span style="width:8px;height:8px;background:#4eff91;border-radius:50%;
-      display:inline-block;box-shadow:0 0 6px #4eff91;animation:piscar 1.5s infinite"></span>
-    Sala: <strong>${safeId}</strong>
-  `;
-  if (!document.getElementById('estiloPiscar')) {
-    const s = document.createElement('style');
-    s.id = 'estiloPiscar';
-    s.textContent = `@keyframes piscar{0%,100%{opacity:1}50%{opacity:.4}}`;
-    document.head.appendChild(s);
-  }
+  badge.querySelector('strong').textContent = salaId;
+  badge.setAttribute('aria-label', `Conectado à sala ${salaId}`);
 }
 
 /* ── Compartilhamento ─────────────────────────────────────── */
 function gerarTextoLista() {
   if (!state.itens.length) return null;
   const fmt       = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const incluidos = state.itens.filter(i => i.incluido !== false);
+  const incluidos = state.itens.filter(i => i.incluido);
   const linhas    = ['🛒 LISTA DE COMPRAS', ''];
   state.itens.forEach((item, idx) => {
-    const marcado  = item.incluido !== false;
     const subtotal = item.preco * item.quantidade;
-    linhas.push(`${marcado ? '✅' : '⬜'} ${idx + 1}. ${item.nome}`);
+    linhas.push(`${item.incluido ? '✅' : '⬜'} ${idx + 1}. ${item.nome}`);
     linhas.push(`   Qtd: ${item.quantidade}  |  Unit.: ${fmt(item.preco)}  |  Subtotal: ${fmt(subtotal)}`);
   });
   const totalItens = incluidos.reduce((a, i) => a + i.quantidade, 0);
@@ -147,13 +148,16 @@ async function compartilhar() {
     if (!salaId) {
       mostrarNotificacao('Criando sala compartilhada...', 'info');
       salaId = await criarSala(state, aoReceberAtualizacaoRemota);
-      if (!salaId) { mostrarNotificacao('Erro ao criar sala.', 'erro'); return; }
+      if (!salaId) {
+        mostrarNotificacao('Não foi possível criar a sala. Tente novamente.', 'erro');
+        return;
+      }
       mostrarIndicadorSala(salaId);
     }
-    link = `${location.origin}${location.pathname}?sala=${salaId}`;
+    link = `${location.origin}${location.pathname}#sala=${salaId}`;
   } else {
-    const payload = btoa(encodeURIComponent(JSON.stringify({ itens: state.itens, temaAtual: state.temaAtual })));
-    link = `${location.origin}${location.pathname}?data=${payload}`;
+    const payload = codificarSnapshot({ itens: state.itens, temaAtual: state.temaAtual });
+    link = `${location.origin}${location.pathname}#data=${payload}`;
   }
 
   if (navigator.share) {
@@ -188,42 +192,92 @@ function handleFinalizarCompra() {
   }
 }
 
-/* ── Carrega dados da URL ─────────────────────────────────── */
+/* ── Carrega dados da URL (fragmento novo, query legada) ──── */
+function confirmarSubstituicao(mensagem) {
+  const dialog = document.getElementById('confirmDialog');
+  document.getElementById('confirmTexto').textContent = mensagem;
+
+  return new Promise(resolve => {
+    const aceitar = document.getElementById('confirmAceitar');
+    const cancelar = document.getElementById('confirmCancelar');
+
+    const limpar = () => {
+      aceitar.removeEventListener('click', aoAceitar);
+      cancelar.removeEventListener('click', aoCancelar);
+      dialog.removeEventListener('cancel', aoCancelar);
+      dialog.removeEventListener('click', aoClicarFora);
+    };
+    const aoAceitar = () => { limpar(); dialog.close(); resolve(true); };
+    const aoCancelar = () => { limpar(); dialog.close(); resolve(false); };
+    const aoClicarFora = (e) => { if (e.target === dialog) aoCancelar(); };
+
+    aceitar.addEventListener('click', aoAceitar);
+    cancelar.addEventListener('click', aoCancelar);
+    dialog.addEventListener('cancel', aoCancelar);
+    dialog.addEventListener('click', aoClicarFora);
+    dialog.showModal();
+  });
+}
+
+function parametrosUrl() {
+  const hash  = new URLSearchParams(location.hash.slice(1));
+  const query = new URLSearchParams(location.search);
+  const pegar = (chave) => hash.get(chave) || query.get(chave);
+  return { sala: pegar('sala'), data: pegar('data') };
+}
+
 async function carregarDadosUrl() {
-  const params = new URLSearchParams(location.search);
-  const salaId = params.get('sala');
-  if (salaId && firebaseConfigurado()) {
-    const ok = await entrarSala(salaId, aoReceberAtualizacaoRemota);
+  const { sala, data } = parametrosUrl();
+
+  if (sala && firebaseConfigurado()) {
+    mostrarNotificacao('Conectando à lista compartilhada...', 'info');
+    let recusado = false;
+    const ok = await entrarSala(sala, aoReceberAtualizacaoRemota, async () => {
+      if (!state.itens.length) return true;
+      recusado = !(await confirmarSubstituicao(
+        'Sua lista atual será guardada em backup e substituída pela lista compartilhada.',
+      ));
+      return !recusado;
+    });
     if (ok) {
       mostrarNotificacao('Conectado à lista compartilhada!', 'sucesso');
-      mostrarIndicadorSala(salaId);
+      mostrarIndicadorSala(sala);
       return true;
     }
+    if (recusado) {
+      mostrarNotificacao('Entrada cancelada. Sua lista local foi mantida.', 'info');
+      return false;
+    }
+    mostrarNotificacao('Sala não encontrada ou indisponível. Sua lista local foi mantida.', 'erro');
   }
-  const dadosUrl = params.get('data');
-  if (dadosUrl) {
-    try {
-      const obj = JSON.parse(decodeURIComponent(atob(dadosUrl)));
-      if (Array.isArray(obj.itens)) {
-        aplicarEstadoExterno(obj); // ponytail: valida itens via storage.js (igual ao path Firebase), fecha bypass do filtro RUN1-003
-        mostrarNotificacao('Lista carregada do link!', 'sucesso');
-        return true;
-      }
-    } catch(e) { console.warn(e); }
+
+  if (data) {
+    const obj = decodificarSnapshot(data);
+    const normalizado = obj ? prepararEstadoExterno(obj) : null;
+    if (!normalizado) {
+      mostrarNotificacao('Link inválido: a lista não foi alterada.', 'erro');
+      return false;
+    }
+    if (state.itens.length &&
+        !(await confirmarSubstituicao(
+          'Sua lista atual será guardada em backup e substituída pela lista do link.',
+        ))) {
+      mostrarNotificacao('Importação cancelada. Sua lista foi mantida.', 'info');
+      return false;
+    }
+    substituirEstado(normalizado);
+    aplicarTema(state.temaAtual);
+    atualizarLista();
+    calcularTotais();
+    mostrarNotificacao('Lista carregada do link!', 'sucesso');
+    return true;
   }
+
   return false;
 }
 
-/* ── Inicialização ────────────────────────────────────────── */
-window.addEventListener('DOMContentLoaded', async () => {
-  injetarIcones();
-  if (firebaseConfigurado()) inicializarFirebase();
-  const carregouUrl = await carregarDadosUrl();
-  if (!carregouUrl) carregarEstado();
-  carregarTema();
-  atualizarLista();
-  calcularTotais();
-
+/* ── Registro de eventos ──────────────────────────────────── */
+function registrarEventos() {
   /* Cabeçalho */
   document.getElementById('btnTema').addEventListener('click', abrirModalTema);
   document.getElementById('btnHistorico').addEventListener('click', abrirHistorico);
@@ -255,34 +309,54 @@ window.addEventListener('DOMContentLoaded', async () => {
   /* Notificação */
   document.getElementById('btnFecharNotificacao').addEventListener('click', fecharNotificacao);
 
-  /* Modal de temas */
-  document.getElementById('temaOverlay').addEventListener('click', e => {
-    if (e.target === e.currentTarget) fecharModalTema();
-  });
+  /* Modais nativos */
+  const temaDialog = document.getElementById('temaDialog');
+  temaDialog.addEventListener('click', e => { if (e.target === temaDialog) fecharModalTema(); });
 
-  /* Modal de histórico */
+  const histDialog = document.getElementById('histDialog');
   document.getElementById('btnFecharHistorico').addEventListener('click', fecharHistorico);
-  document.getElementById('histOverlay').addEventListener('click', e => {
-    if (e.target === e.currentTarget) fecharHistorico();
-  });
+  histDialog.addEventListener('click', e => { if (e.target === histDialog) fecharHistorico(); });
 
   /* Itens da lista */
   document.getElementById('listaItens').addEventListener('click', e => {
     const btn = e.target.closest('[data-acao]');
     if (!btn) return;
-    const id   = parseInt(btn.dataset.id);
+    const id   = Number(btn.dataset.id);
     const acao = btn.dataset.acao;
-    if (!id || !acao) return;
+    if (!Number.isSafeInteger(id) || id <= 0 || !acao) return;
     if (acao === 'toggle')  { toggleItem(id); sincronizarSeNecessario(); return; }
     if (acao === 'excluir') { if (editandoId === id) cancelarEdicao(); excluirItem(id, sincronizarSeNecessario); return; }
     if (acao === 'editar')  { const item = state.itens.find(i => i.id === id); if (item) iniciarEdicao(item); }
   });
 
-  /* Escape */
+  /* Escape: diálogos tratam o próprio fechamento */
   document.addEventListener('keydown', e => {
-    if (e.key !== 'Escape') return;
-    if (document.getElementById('histOverlay').classList.contains('aberto'))  { fecharHistorico(); return; }
-    if (document.getElementById('temaOverlay').classList.contains('aberto'))  { fecharModalTema(); return; }
-    if (editandoId !== null) cancelarEdicao();
+    if (e.key !== 'Escape' || editandoId === null) return;
+    if (document.querySelector('dialog[open]')) return;
+    cancelarEdicao();
   });
+
+  /* Sincronização entre abas */
+  window.addEventListener('storage', e => {
+    if (e.key !== 'listaCompras_v2' && e.key !== 'listaCompras') return;
+    carregarEstado();
+    aplicarTema(state.temaAtual);
+    atualizarLista();
+    calcularTotais();
+  });
+}
+
+/* ── Inicialização ────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', async () => {
+  injetarIcones();
+  if (firebaseConfigurado()) inicializarFirebase();
+
+  // O estado local é sempre carregado antes de qualquer link.
+  carregarEstado();
+  carregarTema();
+  atualizarLista();
+  calcularTotais();
+  registrarEventos();
+
+  await carregarDadosUrl();
 });

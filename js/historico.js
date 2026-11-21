@@ -7,29 +7,33 @@ import { icone } from './icones.js';
 const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 function formatarData(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString('pt-BR', {
+  return new Date(iso).toLocaleDateString('pt-BR', {
     weekday: 'long', day: '2-digit', month: 'long',
     year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 }
 
-function escHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function elemento(tag, classe, texto) {
+  const el = document.createElement(tag);
+  if (classe) el.className = classe;
+  if (texto !== undefined) el.textContent = texto;
+  return el;
 }
 
 export function abrirHistorico() {
   renderizarHistorico();
-  document.getElementById('histOverlay').classList.add('aberto');
+  const dialog = document.getElementById('histDialog');
+  if (dialog && !dialog.open) dialog.showModal();
 }
 
 export function fecharHistorico() {
-  document.getElementById('histOverlay').classList.remove('aberto');
+  document.getElementById('histDialog')?.close();
 }
 
 function renderizarHistorico() {
   const conteudo  = document.getElementById('histConteudo');
   const historico = carregarHistorico();
+  conteudo.textContent = '';
 
   if (!historico.length) {
     conteudo.innerHTML = `
@@ -41,56 +45,60 @@ function renderizarHistorico() {
     return;
   }
 
-  conteudo.innerHTML = '';
-
   historico.forEach((entrada) => {
-    const incluidos  = entrada.itens.filter(i => i.incluido !== false);
-    const totalUn    = incluidos.filter(i => (i.unidade || 'un') === 'un').reduce((a, i) => a + i.quantidade, 0);
-    const totalKg    = incluidos.filter(i => i.unidade === 'kg').reduce((a, i) => a + i.quantidade, 0);
-    const partesItens = [];
+    const incluidos    = entrada.itens.filter(i => i.incluido);
+    const totalUn      = incluidos.filter(i => i.unidade === 'un').reduce((a, i) => a + i.quantidade, 0);
+    const totalKg      = incluidos.filter(i => i.unidade === 'kg').reduce((a, i) => a + i.quantidade, 0);
+    const partesItens  = [];
     if (totalUn > 0) partesItens.push(totalUn + ' un');
     if (totalKg > 0) partesItens.push(totalKg.toLocaleString('pt-BR', { maximumFractionDigits: 3 }) + ' kg');
     const totalItensTexto = partesItens.length ? partesItens.join(' + ') : '0';
-    const totalValor = incluidos.reduce((a, i) => a + i.preco * i.quantidade, 0);
+    const totalValor      = incluidos.reduce((a, i) => a + i.preco * i.quantidade, 0);
 
-    const linhasItens = entrada.itens.map(item => {
-      const marcado  = item.incluido !== false;
-      const subtotal = item.preco * item.quantidade;
-      return `
-        <div class="hist-item ${marcado ? '' : 'hist-item-desmarcado'}">
-          <span class="hist-item-check">${marcado ? icone('check') : ''}</span>
-          <span class="hist-item-nome">${escHtml(item.nome)}</span>
-          <span class="hist-item-detalhe">${item.quantidade} ${item.unidade || 'un'} × ${fmt(item.preco)}</span>
-          <span class="hist-item-subtotal">${fmt(subtotal)}</span>
-        </div>`;
-    }).join('');
+    const card = elemento('div', 'hist-entrada');
 
-    const card = document.createElement('div');
-    card.className = 'hist-entrada';
-    card.innerHTML = `
-      <div class="hist-entrada-header">
-        <div class="hist-entrada-data">
-          ${icone('relogio')}
-          <span>${formatarData(entrada.data)}</span>
-        </div>
-        <button class="btn-acao excluir hist-btn-excluir"
-                data-hist-id="${entrada.id}"
-                title="Remover do histórico"
-                type="button">
-          ${icone('lixeira')}
-        </button>
-      </div>
-      <div class="hist-itens">${linhasItens}</div>
-      <div class="hist-entrada-totais">
-        <span>${icone('cesto')} ${totalItensTexto} marcado${partesItens.length === 1 && (totalUn === 1 || totalKg === 1) ? '' : 's'}</span>
-        <strong>${fmt(totalValor)}</strong>
-      </div>`;
+    const header = elemento('div', 'hist-entrada-header');
+    const dataDiv = elemento('div', 'hist-entrada-data');
+    dataDiv.innerHTML = icone('relogio');
+    dataDiv.appendChild(elemento('span', null, formatarData(entrada.data)));
 
-    card.querySelector('.hist-btn-excluir').addEventListener('click', () => {
+    const btnExcluir = elemento('button', 'btn-acao excluir hist-btn-excluir');
+    btnExcluir.type = 'button';
+    btnExcluir.title = 'Remover do histórico';
+    btnExcluir.setAttribute('aria-label', `Remover compra de ${formatarData(entrada.data)} do histórico`);
+    btnExcluir.innerHTML = icone('lixeira');
+    btnExcluir.addEventListener('click', () => {
       removerEntradaHistorico(entrada.id);
       renderizarHistorico();
     });
+    header.append(dataDiv, btnExcluir);
 
+    const itensDiv = elemento('div', 'hist-itens');
+    entrada.itens.forEach(item => {
+      const marcado = item.incluido;
+      const linha = elemento('div', `hist-item ${marcado ? '' : 'hist-item-desmarcado'}`);
+      linha.setAttribute('role', 'listitem');
+
+      const check = elemento('span', 'hist-item-check');
+      check.innerHTML = marcado ? icone('check') : '';
+      const rotulo = elemento('span', 'sr-only', marcado ? 'Incluído: ' : 'Não incluído: ');
+      const nome = elemento('span', 'hist-item-nome', item.nome);
+      const detalhe = elemento('span', 'hist-item-detalhe', `${item.quantidade} ${item.unidade} × ${fmt(item.preco)}`);
+      const subtotal = elemento('span', 'hist-item-subtotal', fmt(item.preco * item.quantidade));
+
+      linha.append(check, rotulo, nome, detalhe, subtotal);
+      itensDiv.appendChild(linha);
+    });
+
+    const totais = elemento('div', 'hist-entrada-totais');
+    const resumo = elemento('span');
+    resumo.innerHTML = icone('cesto');
+    resumo.appendChild(document.createTextNode(
+      ` ${totalItensTexto} marcado${partesItens.length === 1 && (totalUn === 1 || totalKg === 1) ? '' : 's'}`,
+    ));
+    totais.append(resumo, elemento('strong', null, fmt(totalValor)));
+
+    card.append(header, itensDiv, totais);
     conteudo.appendChild(card);
   });
 }

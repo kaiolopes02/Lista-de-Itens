@@ -1,0 +1,8 @@
+{
+  "name": "lista-de-itens",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

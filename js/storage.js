@@ -1,10 +1,13 @@
 /* ============================================================
    STORAGE — Estado global, localStorage e histórico
    ============================================================ */
+import { normalizarEstado, normalizarHistorico } from './validacao.js';
 
-const CHAVE_LISTA    = 'listaCompras_v2';
+const CHAVE_LISTA     = 'listaCompras_v2';
+const CHAVE_LEGADA    = 'listaCompras';
+const CHAVE_BACKUP    = 'listaCompras_backup';
 const CHAVE_HISTORICO = 'listaCompras_historico';
-const MAX_HISTORICO  = 5;
+const MAX_HISTORICO   = 5;
 
 /** Estado em memória da aplicação */
 export const state = {
@@ -21,39 +24,76 @@ export function salvarEstado() {
   }
 }
 
-/**
- * Carrega o estado do localStorage.
- * Mantém compatibilidade com a chave da versão anterior ('listaCompras').
- */
-export function carregarEstado() {
+function guardarBackup(conteudo) {
+  if (!conteudo) return;
   try {
-    const raw =
-      localStorage.getItem(CHAVE_LISTA) ||
-      localStorage.getItem('listaCompras');
-
-    if (raw) {
-      const obj   = JSON.parse(raw);
-      state.itens     = Array.isArray(obj.itens) ? obj.itens : [];
-      state.temaAtual = typeof obj.temaAtual === 'string' ? obj.temaAtual : 'azul';
-    }
+    localStorage.setItem(CHAVE_BACKUP, conteudo);
   } catch (e) {
-    console.warn('Erro ao carregar estado:', e);
+    console.warn('Não foi possível guardar o backup:', e);
   }
 }
 
 /**
- * Aplica um objeto externo (vindo do Firebase) no state local.
- * @param {Object} dados - { itens, temaAtual }
+ * Carrega e valida o estado do localStorage.
+ * Dados corrompidos são preservados em `listaCompras_backup` e ignorados.
+ * @returns {boolean} false quando o conteúdo armazenado era inválido
  */
-export function aplicarEstadoExterno(dados) {
-  if (Array.isArray(dados.itens)) {
-    // ponytail: filtra itens malformados vindos de URL/Firebase
-    state.itens = dados.itens.filter(item =>
-      item && typeof item.id === 'number' && typeof item.nome === 'string' && item.nome.trim()
-    );
+export function carregarEstado() {
+  let raw;
+  try {
+    raw = localStorage.getItem(CHAVE_LISTA) || localStorage.getItem(CHAVE_LEGADA);
+  } catch (e) {
+    console.warn('Erro ao acessar o armazenamento:', e);
+    return false;
   }
-  if (typeof dados.temaAtual === 'string') state.temaAtual = dados.temaAtual;
+  if (!raw) return true;
+
+  let obj;
+  try {
+    obj = JSON.parse(raw);
+  } catch (e) {
+    guardarBackup(raw);
+    console.warn('Estado local inválido preservado em backup:', e);
+    return false;
+  }
+
+  const normalizado = normalizarEstado(obj);
+  if (!normalizado) {
+    guardarBackup(raw);
+    console.warn(`Estado local inválido preservado em "${CHAVE_BACKUP}".`);
+    return false;
+  }
+
+  state.itens     = normalizado.itens;
+  state.temaAtual = normalizado.temaAtual;
+  return true;
+}
+
+/**
+ * Valida uma fonte externa (URL/Firebase) sem tocar no estado atual.
+ * @returns {{itens: Array, temaAtual: string}|null}
+ */
+export function prepararEstadoExterno(dados, opcoes = {}) {
+  return normalizarEstado(dados, opcoes);
+}
+
+/** Substitui o estado atual, guardando a lista anterior em backup. */
+export function substituirEstado(normalizado) {
+  if (state.itens.length) guardarBackup(JSON.stringify(state));
+  state.itens     = normalizado.itens;
+  state.temaAtual = normalizado.temaAtual;
   salvarEstado();
+}
+
+/**
+ * Valida e aplica um objeto externo de forma atômica.
+ * @returns {boolean} false quando o snapshot é inválido
+ */
+export function aplicarEstadoExterno(dados, opcoes = {}) {
+  const normalizado = prepararEstadoExterno(dados, opcoes);
+  if (!normalizado) return false;
+  substituirEstado(normalizado);
+  return true;
 }
 
 /* ============================================================
@@ -61,13 +101,19 @@ export function aplicarEstadoExterno(dados) {
    ============================================================ */
 
 /**
- * Retorna o array de compras salvas no histórico.
+ * Retorna as compras válidas salvas no histórico.
  * @returns {Array} até MAX_HISTORICO entradas
  */
 export function carregarHistorico() {
   try {
     const raw = localStorage.getItem(CHAVE_HISTORICO);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const lista = JSON.parse(raw);
+    const validas = normalizarHistorico(lista);
+    if (!Array.isArray(lista) || validas.length !== lista.length) {
+      localStorage.setItem(CHAVE_HISTORICO, JSON.stringify(validas));
+    }
+    return validas.slice(0, MAX_HISTORICO);
   } catch {
     return [];
   }
@@ -86,13 +132,12 @@ export function finalizarCompra() {
   const entrada = {
     id:        Date.now(),
     data:      new Date().toISOString(),
-    itens:     JSON.parse(JSON.stringify(state.itens)), // deep copy
+    itens:     JSON.parse(JSON.stringify(state.itens)),
     temaAtual: state.temaAtual,
   };
 
-  // Insere no início e limita ao máximo
   historico.unshift(entrada);
-  while (historico.length > MAX_HISTORICO) historico.pop(); // ponytail: pop remove o mais antigo (final), unshift insere no início
+  while (historico.length > MAX_HISTORICO) historico.pop();
 
   try {
     localStorage.setItem(CHAVE_HISTORICO, JSON.stringify(historico));
@@ -101,7 +146,6 @@ export function finalizarCompra() {
     return false;
   }
 
-  // Limpa a lista atual
   state.itens = [];
   salvarEstado();
   return true;
@@ -113,5 +157,9 @@ export function finalizarCompra() {
  */
 export function removerEntradaHistorico(id) {
   const historico = carregarHistorico().filter(e => e.id !== id);
-  localStorage.setItem(CHAVE_HISTORICO, JSON.stringify(historico));
+  try {
+    localStorage.setItem(CHAVE_HISTORICO, JSON.stringify(historico));
+  } catch (e) {
+    console.warn('Erro ao atualizar histórico:', e);
+  }
 }

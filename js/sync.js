@@ -7,6 +7,7 @@
    ============================================================ */
 
 import { state } from './storage.js';
+import { normalizarEstado } from './validacao.js';
 import { initializeApp }                    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, set, onValue,
          off }                              from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
@@ -22,6 +23,8 @@ const FIREBASE_CONFIG = {
   appId:             "1:892949603134:web:f387ebee8ec85d5c65026f",
 };
 /* ─────────────────────────────────────────────────────────── */
+
+const TEMPO_LIMITE_SALA = 8000;
 
 let _app      = null;
 let _db       = null;
@@ -51,35 +54,113 @@ export function firebaseConfigurado() {
   return FIREBASE_CONFIG.apiKey !== 'COLE_AQUI';
 }
 
+/** Gera uma capability de 128 bits em base64url (22 caracteres). */
+export function gerarIdSala() {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  let binario = '';
+  for (const byte of bytes) binario += String.fromCharCode(byte);
+  return btoa(binario).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 /**
- * Cria uma nova sala no Firebase com o estado atual e começa a ouvir mudanças.
- * @param {Object}   estado    - state atual da aplicação
- * @param {Function} onUpdate  - callback chamado quando o Firebase atualiza a lista
- * @returns {string} salaId gerado
+ * Cria uma sala com o estado atual. Só devolve o id depois de a escrita
+ * inicial ser aceita pelo Firebase.
+ * @returns {Promise<string|null>}
  */
 export async function criarSala(estado, onUpdate) {
   if (!_db) return null;
 
-  // Gera ID de sala curto e legível (ex: "x7k2m9")
-  _salaId = Math.random().toString(36).slice(2, 8);
+  _salaId  = gerarIdSala();
+  _salaRef = ref(_db, `listas/${_salaId}`);
 
-  await _conectarSala(onUpdate);
-  await publicarEstado(estado);
+  try {
+    await set(_salaRef, {
+      itens:     estado.itens,
+      temaAtual: estado.temaAtual,
+      ts:        Date.now(),
+    });
+  } catch (e) {
+    console.error('Erro ao criar sala:', e);
+    sairSala();
+    return null;
+  }
 
+  _conectarSala(onUpdate);
   return _salaId;
 }
 
 /**
- * Entra em uma sala existente e começa a ouvir mudanças.
+ * Entra em uma sala existente. Resolve somente após o primeiro snapshot
+ * válido; sala inexistente, inválida ou sem resposta resolve false.
  * @param {string}   salaId
- * @param {Function} onUpdate - callback chamado quando o Firebase atualiza a lista
+ * @param {Function} onUpdate        - recebe o estado normalizado
+ * @param {Function} aceitarPrimeiro - decide se o primeiro snapshot substitui o estado local
+ * @returns {Promise<boolean>}
  */
-export async function entrarSala(salaId, onUpdate) {
+export async function entrarSala(salaId, onUpdate, aceitarPrimeiro = () => true) {
   if (!_db) return false;
-  if (typeof salaId !== 'string' || !/^[A-Za-z0-9_-]{2,64}$/.test(salaId)) return false; // ponytail: valida a chave do path Firebase, evita path-traversal na ref (/[].$)
-  _salaId = salaId;
-  await _conectarSala(onUpdate);
-  return true;
+  if (typeof salaId !== 'string' || !/^[A-Za-z0-9_-]{2,64}$/.test(salaId)) return false;
+
+  if (_salaRef) off(_salaRef);
+  _salaId  = salaId;
+  _salaRef = ref(_db, `listas/${_salaId}`);
+
+  return new Promise(resolve => {
+    let concluido = false;
+    let processando = false;
+    let timer;
+    const finalizar = (ok) => {
+      if (concluido) return;
+      concluido = true;
+      clearTimeout(timer);
+      if (!ok) sairSala();
+      resolve(ok);
+    };
+    timer = setTimeout(() => finalizar(false), TEMPO_LIMITE_SALA);
+
+    onValue(_salaRef, async snapshot => {
+      const normalizado = normalizarEstado(snapshot.val(), { itensOpcionais: true });
+
+      if (concluido) {
+        if (!normalizado) {
+          console.warn('Snapshot remoto inválido ignorado.');
+          return;
+        }
+        if (mesmoEstado(normalizado)) return;
+        onUpdate(normalizado);
+        return;
+      }
+
+      if (processando) return;
+      processando = true;
+      clearTimeout(timer);
+
+      if (!normalizado) {
+        finalizar(false);
+        return;
+      }
+
+      let aceito = false;
+      try {
+        aceito = await aceitarPrimeiro(normalizado);
+      } catch (e) {
+        console.error('Erro ao confirmar a entrada na sala:', e);
+      }
+
+      if (!aceito) {
+        processando = false;
+        finalizar(false);
+        return;
+      }
+
+      onUpdate(normalizado);
+      processando = false;
+      finalizar(true);
+    }, erro => {
+      console.error('Erro ao ouvir a sala:', erro);
+      finalizar(false);
+    });
+  });
 }
 
 /** Desconecta da sala atual */
@@ -93,38 +174,39 @@ export function sairSala() {
 
 /**
  * Publica o estado atual no Firebase.
- * Deve ser chamado após qualquer alteração local na lista.
- * @param {Object} estado - state atual
+ * @returns {Promise<boolean>} false quando a escrita não foi aceita
  */
 export async function publicarEstado(estado) {
-  if (!_db || !_salaId) return;
-
-  // Sinaliza que a próxima atualização recebida é nossa — não re-renderiza
-  try { await set(_salaRef, {
+  if (!_db || !_salaRef) return false;
+  try {
+    await set(_salaRef, {
       itens:     estado.itens,
       temaAtual: estado.temaAtual,
-      ts:        Date.now(), // timestamp para desempate
+      ts:        Date.now(),
     });
-    
+    return true;
   } catch (e) {
     console.error('Erro ao publicar estado:', e);
+    return false;
   }
 }
 
 /* ── Interno ──────────────────────────────────────────────── */
 
-async function _conectarSala(onUpdate) {
-  if (_salaRef) off(_salaRef); // desconecta sala anterior se existir
+function mesmoEstado(normalizado) {
+  return JSON.stringify(normalizado.itens) === JSON.stringify(state.itens) &&
+         normalizado.temaAtual === state.temaAtual;
+}
 
-  _salaRef = ref(_db, `listas/${_salaId}`);
-
-  onValue(_salaRef, (snapshot) => {
-    const dados = snapshot.val();
-    if (dados && Array.isArray(dados.itens)) {
-      // ponytail: compara com state local; se identico ignora (echo da propria publicacao)
-      if (JSON.stringify(dados.itens) === JSON.stringify(state.itens) &&
-          dados.temaAtual === state.temaAtual) return;
-      onUpdate(dados);
+function _conectarSala(onUpdate) {
+  if (!_salaRef) return;
+  onValue(_salaRef, snapshot => {
+    const normalizado = normalizarEstado(snapshot.val(), { itensOpcionais: true });
+    if (!normalizado) {
+      console.warn('Snapshot remoto inválido ignorado.');
+      return;
     }
-  });
+    if (mesmoEstado(normalizado)) return;
+    onUpdate(normalizado);
+  }, erro => console.error('Erro ao ouvir a sala:', erro));
 }

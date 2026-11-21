@@ -2,19 +2,20 @@
    TEMA — Paletas, modal de seleção e persistência
    ============================================================ */
 import { state, salvarEstado } from './storage.js';
+import { TEMAS_VALIDOS, TEMA_PADRAO } from './validacao.js';
 import { icone } from './icones.js';
 
 /** Definição de todos os temas disponíveis */
 export const TEMAS = [
-  { id: 'azul',     nome: 'Azul',     cor: '#2196f3' },
-  { id: 'verde',    nome: 'Verde',    cor: '#43a047' },
-  { id: 'violeta',  nome: 'Violeta',  cor: '#8e24aa' },
-  { id: 'vermelho', nome: 'Vermelho', cor: '#e53935' },
-  { id: 'laranja',  nome: 'Laranja',  cor: '#fb8c00' },
-  { id: 'amarelo',  nome: 'Amarelo',  cor: '#f9a825' },
-  { id: 'anil',     nome: 'Anil',     cor: '#3f51b5' },
-  { id: 'rosa',     nome: 'Rosa',     cor: '#e91e8c' },
-  { id: 'escuro',   nome: 'Escuro',   cor: '#37474f' },
+  { id: 'azul',     nome: 'Azul',     cor: '#1565c0' },
+  { id: 'verde',    nome: 'Verde',    cor: '#2e7d32' },
+  { id: 'violeta',  nome: 'Violeta',  cor: '#6a1b9a' },
+  { id: 'vermelho', nome: 'Vermelho', cor: '#c62828' },
+  { id: 'laranja',  nome: 'Laranja',  cor: '#b45309' },
+  { id: 'amarelo',  nome: 'Amarelo',  cor: '#7a5c00' },
+  { id: 'anil',     nome: 'Anil',     cor: '#303f9f' },
+  { id: 'rosa',     nome: 'Rosa',     cor: '#ad1457' },
+  { id: 'escuro',   nome: 'Escuro',   cor: '#64b5f6' },
 ];
 
 /**
@@ -22,8 +23,9 @@ export const TEMAS = [
  * @param {string} temaId
  */
 export function aplicarTema(temaId) {
-  state.temaAtual = temaId;
-  document.documentElement.setAttribute('data-tema', temaId);
+  const id = TEMAS_VALIDOS.includes(temaId) ? temaId : TEMA_PADRAO;
+  state.temaAtual = id;
+  document.documentElement.setAttribute('data-tema', id);
   salvarEstado();
 }
 
@@ -48,8 +50,7 @@ export function renderTemaGrade() {
     `;
     btn.addEventListener('click', () => {
       aplicarTema(t.id);
-      renderTemaGrade();          // atualiza selecionado visualmente
-      setTimeout(fecharModalTema, 250);
+      fecharModalTema();
     });
     grade.appendChild(btn);
   });
@@ -58,10 +59,11 @@ export function renderTemaGrade() {
 /** Abre o modal de seleção de tema */
 export function abrirModalTema() {
   renderTemaGrade();
-  document.getElementById('temaOverlay')?.classList.add('aberto');
+  const dialog = document.getElementById('temaDialog');
+  if (dialog && !dialog.open) dialog.showModal();
 }
 
 /** Fecha o modal de seleção de tema */
 export function fecharModalTema() {
-  document.getElementById('temaOverlay')?.classList.remove('aberto');
+  document.getElementById('temaDialog')?.close();
 }

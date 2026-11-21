@@ -2,6 +2,7 @@
    ITENS — CRUD da lista
    ============================================================ */
 import { state, salvarEstado }            from './storage.js';
+import { proximoId }                      from './validacao.js';
 import { atualizarLista, calcularTotais } from './lista.js';
 import { mostrarNotificacao }             from './notificacao.js';
 import { icone }                          from './icones.js';
@@ -71,9 +72,9 @@ export function manipularItem(e, editandoId) {
   const qtd     = parseFloat(document.getElementById('quantidade').value);
   const unidade = document.getElementById('unidade')?.value || 'un';
 
-  if (!nome)                     { mostrarNotificacao('Informe o nome do item.', 'erro');  return false; }
-  if (isNaN(preco) || preco < 0) { mostrarNotificacao('Preço inválido.', 'erro');          return false; }
-  if (isNaN(qtd) || qtd < 0.001) { mostrarNotificacao('Quantidade deve ser maior que 0.', 'erro'); return false; }
+  if (!nome || nome.length > 120)     { mostrarNotificacao('Informe um nome de até 120 caracteres.', 'erro'); return false; }
+  if (!Number.isFinite(preco) || preco < 0)   { mostrarNotificacao('Preço inválido.', 'erro'); return false; }
+  if (!Number.isFinite(qtd) || qtd < 0.001)   { mostrarNotificacao('Quantidade deve ser maior que 0.', 'erro'); return false; }
 
   const duplicado = state.itens.find(
     i => i.nome.toLowerCase() === nome.toLowerCase() && i.id !== editandoId
@@ -85,7 +86,7 @@ export function manipularItem(e, editandoId) {
     if (item) { item.nome = nome; item.preco = preco; item.quantidade = qtd; item.unidade = unidade; }
     mostrarNotificacao(`"${nome}" atualizado!`, 'sucesso');
   } else {
-    state.itens.push({ id: Date.now(), nome, preco, quantidade: qtd, unidade, incluido: true });
+    state.itens.push({ id: proximoId(state.itens), nome, preco, quantidade: qtd, unidade, incluido: true });
     mostrarNotificacao(`"${nome}" adicionado!`, 'sucesso');
   }
 
@@ -96,7 +97,7 @@ export function manipularItem(e, editandoId) {
 export function toggleItem(id) {
   const item = state.itens.find(i => i.id === id);
   if (!item) return;
-  item.incluido = !(item.incluido !== false); // ponytail: inverte estado exibido, trata undefined como incluído
+  item.incluido = !item.incluido;
   atualizarLista(); calcularTotais(); salvarEstado();
 }
 
@@ -113,7 +114,7 @@ export function excluirItem(id, aoConcluir) {
 }
 
 export function toggleTodos() {
-  const todosIncluidos = state.itens.every(i => i.incluido !== false);
+  const todosIncluidos = state.itens.every(i => i.incluido);
   state.itens.forEach(i => (i.incluido = !todosIncluidos));
   atualizarLista(); calcularTotais(); salvarEstado();
   mostrarNotificacao(todosIncluidos ? 'Todos desmarcados.' : 'Todos marcados.', 'info');
