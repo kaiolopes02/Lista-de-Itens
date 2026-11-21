@@ -113,7 +113,8 @@ O navegador carrega `index.html`, que carrega `js/main.js`; `js/main.js` importa
 ├── docs/superpowers/
 ├── security-audit/
 │   ├── run-1/REPORT.md
-│   └── run-2/REPORT.md
+│   ├── run-2/REPORT.md
+│   └── run-3/REPORT.md
 └── README.md
 ```
 
@@ -139,7 +140,7 @@ O navegador carrega `index.html`, que carrega `js/main.js`; `js/main.js` importa
 | `css/style.css` | Entrada do estilo; importa a fonte e os módulos CSS na ordem correta |
 | `css/base.css` | Reset, variáveis, tipografia, fundo global e suporte à redução de movimento |
 | `css/layout.css` | Container principal, cards, cabeçalho, totais, barra de progresso e lista de itens |
-| `css/components.css` | Botões, formulário, modal de temas, modal de histórico e ajustes de ícones |
+| `css/components.css` | Botões, formulário, diálogos de tema, histórico e confirmação, e ajustes de ícones |
 | `css/notificacao.css` | Toast flutuante e seus estados visuais |
 | `css/tema.css` | Variáveis das 9 paletas e regras de responsividade |
 
@@ -205,7 +206,7 @@ Na inicialização, o código ainda lê a chave legada `listaCompras` se `listaC
 | Campo | Tipo | Regras no cliente e nas regras do Firebase |
 |---|---|---|
 | `id` | Número | Inteiro positivo e seguro, gerado por `proximoId()` |
-| `nome` | Texto | Nome não vazio; no RTDB, entre 1 e 120 caracteres |
+| `nome` | Texto | Texto não vazio, até 120 caracteres |
 | `preco` | Número | Preço por unidade, maior ou igual a zero |
 | `quantidade` | Número | Quantidade maior que zero |
 | `unidade` | Texto | `un` ou `kg` |
@@ -285,10 +286,10 @@ O comando usa `firebase.json` e publica o conteúdo de `database.rules.json`. N�
 O repositório publica a raiz do branch `master` no subcaminho `/Lista-de-Itens/`. Depois da revisão e das verificações do branch, o fluxo de publicação usa um push explícito para esse branch:
 
 ```powershell
-git push origin <branch-de-trabalho>:master
+git push origin fix/security-ui-hardening:master
 ```
 
-Não há bundler nem artefato de build: os arquivos versionados em `index.html`, `css/`, `js/`, `assets/` e `site.webmanifest` são publicados diretamente.
+O push é um fast-forward a partir de `origin/master` e publica diretamente os arquivos versionados em `index.html`, `css/`, `js/`, `assets/` e `site.webmanifest`. Não há bundler nem artefato de build.
 
 ## Verificação
 
@@ -409,6 +410,7 @@ function Assert-Status($Response, [int[]]$Expected, [string]$Step) {
 
 $valid = @{ itens = @(@{ id = 1; nome = 'Item de verificação'; preco = 1; quantidade = 1; unidade = 'un'; incluido = $true }); temaAtual = 'azul'; ts = 1 } | ConvertTo-Json -Depth 5 -Compress
 $invalid = @{ itens = @(@{ id = 2; nome = 'Item inválido'; preco = -1; quantidade = 1; unidade = 'un'; incluido = $true; extra = 'bloqueado' }); temaAtual = 'azul'; ts = 2 } | ConvertTo-Json -Depth 5 -Compress
+$incomplete = @{ itens = @(@{ id = 3; nome = 'Item incompleto' }); temaAtual = 'azul'; ts = 3 } | ConvertTo-Json -Depth 5 -Compress
 
 try {
   $response = Invoke-Rtdb PUT $room $valid
@@ -418,6 +420,8 @@ try {
   if ($response.Body -notmatch 'Item de verificação') { throw 'GET da sala: payload não persistido' }
   $response = Invoke-Rtdb PUT $room $invalid
   Assert-Status $response @(401) 'PUT inválido'
+  $response = Invoke-Rtdb PUT $room $incomplete
+  Assert-Status $response @(401) 'PUT com item incompleto'
   $response = Invoke-Rtdb GET "$base/.json"
   Assert-Status $response @(401) 'GET da raiz'
 } finally {
@@ -434,7 +438,7 @@ O teste valida as regras ativas, não apenas o arquivo local. Se o `DELETE` de l
 
 ## Segurança
 
-Os relatórios das duas auditorias executadas estão em `security-audit/run-1/REPORT.md` e `security-audit/run-2/REPORT.md`. Eles registram correções e riscos residuais; não são uma garantia absoluta de segurança.
+Os relatórios das auditorias executadas estão em `security-audit/run-1/REPORT.md`, `security-audit/run-2/REPORT.md` e `security-audit/run-3/REPORT.md`. A run-3 confirmou 8 achados (XSS persistente, snapshot malformado, regras permissivas, perda de lista local, falha de publicação silenciosa, IDs inválidos e entropia insuficiente do id de sala); todos foram corrigidos neste ciclo e cobertos por `tests/`. Os relatórios registram correções e riscos residuais; não são uma garantia absoluta de segurança.
 
 ### Controles presentes
 
@@ -458,16 +462,17 @@ Os relatórios das duas auditorias executadas estão em `security-audit/run-1/RE
 
 ## Limitações
 
-- **Sem Firebase Authentication:** salas e participantes não têm identidade; o acesso anônimo é intencional no desenho atual.
-- **Sem operações offline completas:** não há fila de alterações, resolução de conflitos ou cache da aplicação. Sem service worker, não há garantia de carregamento ou uso offline.
-- **Sem service worker:** o manifesto cobre instalação, mas não cache nem estratégia de atualização do app.
+As limitações abaixo são lacunas conhecidas; cada uma corresponde a uma melhoria listada em [Próximos passos](#próximos-passos).
+
+- **Sem Firebase Authentication:** salas e participantes não têm identidade; o acesso anônimo por posse do link é intencional no desenho atual.
+- **Sem suporte offline:** não há service worker, fila de alterações nem cache da aplicação; o manifesto cobre apenas a instalação.
+- **Sem resolução de conflitos:** alterações simultâneas na mesma sala podem perder dados, porque cada cliente publica o estado inteiro (last-write-wins).
 - **Sem CI/CD:** validação e publicação são passos manuais. Os testes rodam localmente com `node --test`.
 - **Sem analytics:** não há métricas de uso, erros ou auditoria de eventos.
 - **Sem página 404 customizada:** rotas inexistentes dependem do comportamento padrão do GitHub Pages.
 - **Histórico local por dispositivo:** compras finalizadas não são sincronizadas e podem ser perdidas ao limpar dados do navegador ou trocar de dispositivo.
 - **Sem licença definida:** não há arquivo de licença ou termos de uso explícitos no repositório.
 - **Firebase Web SDK dependente de CDN:** o SDK 10.12.2 e a fonte externa são resolvidos em tempo de execução.
-- **Sem resolução de conflitos:** alterações simultâneas na mesma sala podem perder dados.
 - **Tema não publica imediatamente:** trocar o tema não dispara, por si só, uma escrita no Firebase.
 
 ## Próximos passos

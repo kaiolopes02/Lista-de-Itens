@@ -1,0 +1,682 @@
+[
+  {
+    "verdict": "confirmed",
+    "title": "Persistent DOM XSS through malformed ?data= item fields",
+    "description": "A crafted ?data= snapshot can provide a string in preco or quantidade. aplicarEstadoExterno accepts the item because it validates only id and nome. lista.js interpolates the formatted values into innerHTML, and a string's toLocaleString returns the attacker-controlled text unchanged. The malicious state is then persisted to listaCompras_v2, so execution survives reload. The same weak schema permits a malicious unidade to reach historico.js after the victim finalizes the imported list. Headless Chrome confirmed immediate execution and persistence across reloads.",
+    "root_cause": "aplicarEstadoExterno in js/storage.js does not validate the complete item schema before persistence, allowing attacker-controlled strings to reach innerHTML sinks in js/lista.js and js/historico.js.",
+    "intended_behavior": "External snapshots and shared-room payloads must contain only well-formed shopping items and must be rendered only as validated data, never as executable markup.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "js/main.js",
+        "line": 203,
+        "scope": "carregarDadosUrl",
+        "description": "Reads the attacker-controlled ?data= parameter and decodes its JSON payload."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/storage.js",
+        "line": 48,
+        "scope": "aplicarEstadoExterno",
+        "description": "Accepts an item when id is numeric and nome is a nonempty string, without validating preco, quantidade, unidade, incluido, extra fields, or ID uniqueness."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/storage.js",
+        "line": 56,
+        "scope": "aplicarEstadoExterno",
+        "description": "Persists the malformed state under listaCompras_v2, making the payload survive a reload."
+      },
+      {
+        "kind": "sink",
+        "file": "js/lista.js",
+        "line": 66,
+        "scope": "atualizarLista",
+        "description": "Builds the item with innerHTML and interpolates the unvalidated formatted price and quantity; the history renderer has the equivalent unsafe unit interpolation at js/historico.js:63."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "user_interaction",
+        "description": "The victim opens a URL containing the crafted ?data= parameter."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "An unauthenticated attacker who can send a link to the application user.",
+      "payloads": [
+        "{\"itens\":[{\"id\":1,\"nome\":\"x\",\"preco\":\"<img src=x onerror=alert(document.domain)>\",\"quantidade\":1,\"unidade\":\"un\",\"incluido\":true}],\"temaAtual\":\"azul\"}",
+        "A variant using a malicious quantidade value, or a malicious unidade value that is rendered after finalizing the purchase."
+      ],
+      "instructions": [
+        "Serialize the payload with btoa(encodeURIComponent(JSON.stringify(payload))).",
+        "Send the victim a link ending in ?data=<encoded payload>.",
+        "The victim opens the link; the application accepts, persists, and renders the item.",
+        "Reload the same origin to confirm that the payload remains persistent."
+      ],
+      "expected_result": "Attacker-controlled JavaScript executes in the application's origin and can access same-origin storage and application capabilities."
+    },
+    "remediation": {
+      "strategy": "Use one strict, atomic schema validator for URL, Firebase, localStorage, and history data. Require all fields, finite numeric values, allowed units, boolean inclusion, unique positive integer IDs, and no extra fields. Reject an invalid external snapshot instead of filtering it partially, and render user-controlled values with textContent rather than innerHTML.",
+      "code_changes": [
+        {
+          "file_name": "js/storage.js",
+          "fixed_code": "const schema = { id: 'positive-integer', nome: 'nonempty-string', preco: 'finite-nonnegative-number', quantidade: 'finite-positive-number', unidade: 'un|kg', incluido: 'boolean' }; validate the complete snapshot atomically before assigning state or calling salvarEstado()."
+        },
+        {
+          "file_name": "js/lista.js",
+          "fixed_code": "Create dynamic labels with textContent and only interpolate validated numeric values into safe markup."
+        },
+        {
+          "file_name": "js/historico.js",
+          "fixed_code": "Validate history entries on load and use textContent for item names, units, quantities, and prices."
+        }
+      ]
+    },
+    "severity": {
+      "likelihood": {
+        "score": "medium",
+        "reason": "Exploitation requires only delivery of a crafted application URL, but no account or server access."
+      },
+      "impact": {
+        "score": "medium",
+        "reason": "The payload executes same-origin JavaScript persistently and can read or modify local shopping/history data and abuse publicly available Firebase capabilities."
+      },
+      "overall_severity": "medium"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "The source-to-sink path was traced and independently reproduced in headless Chrome, including persistence after reload and the history variant."
+    }
+  },
+  {
+    "verdict": "confirmed",
+    "title": "Malformed external snapshots persistently crash the client",
+    "description": "External state validation accepts incomplete items and non-finite numeric values. An item with id and nome but no preco passes validation, is persisted, and then undefined.toLocaleString throws during rendering before event handlers are registered. A ?data= JSON payload containing 1e309 is parsed as Infinity, accepted, and serialized by JSON.stringify as null; a later load without the URL then renders null.toLocaleString and crashes. The malformed state remains in localStorage until replaced or cleared.",
+    "root_cause": "aplicarEstadoExterno and carregarEstado in js/storage.js do not enforce a complete finite-value schema before persisting or rendering external state, allowing malformed items to cause a persistent client-side availability failure.",
+    "intended_behavior": "Malformed local or shared data must be rejected atomically or safely discarded without replacing a valid list and without crashing the application.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "js/main.js",
+        "line": 203,
+        "scope": "carregarDadosUrl",
+        "description": "Parses an attacker-controlled ?data= JSON snapshot, which may omit numeric fields or contain the non-finite JSON number 1e309."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/storage.js",
+        "line": 51,
+        "scope": "aplicarEstadoExterno",
+        "description": "Accepts the item without checking required numeric fields, finite numbers, or a complete schema."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/storage.js",
+        "line": 56,
+        "scope": "aplicarEstadoExterno",
+        "description": "Persists the malformed item; JSON serialization converts Infinity to null."
+      },
+      {
+        "kind": "sink",
+        "file": "js/lista.js",
+        "line": 73,
+        "scope": "atualizarLista",
+        "description": "Calls formatarMoeda on undefined or null and throws before startup finishes wiring event handlers."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "user_interaction",
+        "description": "The victim opens the malformed snapshot URL or later reloads after it was persisted."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "An unauthenticated attacker who can deliver a crafted link.",
+      "payloads": [
+        "{\"itens\":[{\"id\":1,\"nome\":\"incomplete\"}],\"temaAtual\":\"azul\"}",
+        "{\"itens\":[{\"id\":1,\"nome\":\"infinite\",\"preco\":1e309,\"quantidade\":1,\"unidade\":\"un\",\"incluido\":true}],\"temaAtual\":\"azul\"}"
+      ],
+      "instructions": [
+        "Encode the payload with btoa(encodeURIComponent(JSON.stringify(payload))).",
+        "Open the resulting ?data= URL.",
+        "For the Infinity variant, reload the origin without the query parameter.",
+        "Observe the render exception and malformed listaCompras_v2 entry."
+      ],
+      "expected_result": "The list fails to render and the failure persists after reload, leaving the application effectively unusable until storage is manually repaired or cleared."
+    },
+    "remediation": {
+      "strategy": "Validate complete snapshots atomically with Number.isFinite for all numeric fields. Reject invalid URL/Firebase data before it can replace state or localStorage. Validate localStorage on load and recover by retaining only a valid current snapshot or presenting a recoverable error state.",
+      "code_changes": [
+        {
+          "file_name": "js/storage.js",
+          "fixed_code": "Require Number.isFinite(preco), Number.isFinite(quantidade), preco >= 0, quantidade > 0, and every required field before assigning state.itens."
+        },
+        {
+          "file_name": "js/main.js",
+          "fixed_code": "Only report that a URL snapshot was loaded after the complete snapshot validator returns success."
+        }
+      ]
+    },
+    "severity": {
+      "likelihood": {
+        "score": "medium",
+        "reason": "A crafted link is sufficient; no account or Firebase write access is required."
+      },
+      "impact": {
+        "score": "medium",
+        "reason": "The failure is persistent for the affected browser and disables normal list interaction, though it is confined to clients that open the payload."
+      },
+      "overall_severity": "medium"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "Both incomplete-item and Infinity-to-null flows were traced and reproduced in Chrome, including persistence across reloads."
+    }
+  },
+  {
+    "verdict": "confirmed",
+    "title": "Realtime Database rules permit incomplete items that poison peers",
+    "description": "The versioned RTDB rules validate fields only when those children exist, but do not require id, nome, preco, quantidade, unidade, and incluido to be present. If these rules are active, any anonymous writer that knows a room ID can persist an item containing only id and nome. Clients accept that item and later crash while formatting its undefined price. The client-side incomplete-item crash was independently reproduced; production rule parity was previously verified by REST behavior, while this run did not perform a new production write.",
+    "root_cause": "database.rules.json does not require the complete item schema before validating child values, allowing anonymous room writes to persist states that clients cannot safely render.",
+    "intended_behavior": "The server should reject every room snapshot whose items do not contain the complete schema required by the client.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "database.rules.json",
+        "line": 5,
+        "scope": "listas.$salaId.write",
+        "description": "Grants anonymous write access to the room path."
+      },
+      {
+        "kind": "propagation",
+        "file": "database.rules.json",
+        "line": 8,
+        "scope": "listas.$salaId.itens.$idx",
+        "description": "Validates only fields that exist and therefore accepts an item with id and nome but no preco, quantidade, unidade, or incluido."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/storage.js",
+        "line": 51,
+        "scope": "aplicarEstadoExterno",
+        "description": "Accepts the incomplete peer item because its client filter also checks only id and nome."
+      },
+      {
+        "kind": "sink",
+        "file": "js/lista.js",
+        "line": 73,
+        "scope": "atualizarLista",
+        "description": "Formats the missing price and throws, poisoning the affected client's persistent local copy."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "system_configuration",
+        "description": "The versioned database.rules.json is active in the deployed Firebase project."
+      },
+      {
+        "kind": "authorization_role",
+        "description": "The attacker knows or guesses a room ID and has anonymous write access, as intended for link participants."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "An anonymous participant with knowledge of a shared room ID.",
+      "payloads": [
+        "PUT https://lista-de-itens-2a16b-default-rtdb.firebaseio.com/listas/<known-room>.json with {\"itens\":[{\"id\":1,\"nome\":\"Item remoto\"}],\"temaAtual\":\"azul\",\"ts\":1}"
+      ],
+      "instructions": [
+        "Obtain a room ID from a shared link.",
+        "Write an item containing only id and nome to that room.",
+        "Open the room in a client.",
+        "The client accepts the item and crashes while formatting the missing price."
+      ],
+      "expected_result": "A malformed room snapshot is accepted by the server and can crash peers that load it."
+    },
+    "remediation": {
+      "strategy": "Add an item-level validation that requires the complete field set before child validation runs. Keep the schema aligned with the client validator and continue rejecting unknown children.",
+      "code_changes": [
+        {
+          "file_name": "database.rules.json",
+          "fixed_code": "\".validate\": \"newData.hasChildren(['id','nome','preco','quantidade','unidade','incluido'])\" at each item path, plus the existing per-field validators."
+        }
+      ]
+    },
+    "severity": {
+      "likelihood": {
+        "score": "medium",
+        "reason": "Any participant with a room ID can attempt the write, but the server-side acceptance depends on the deployed rules matching the repository file."
+      },
+      "impact": {
+        "score": "medium",
+        "reason": "A room participant can persistently crash peers and poison their local copies, but cannot read unrelated rooms or bypass the root database boundary."
+      },
+      "overall_severity": "medium"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "Rule semantics and the client crash path were source-confirmed and the client behavior was dynamically reproduced; no new production write was made in this run."
+    }
+  },
+  {
+    "verdict": "confirmed",
+    "title": "Opening a nonexistent room silently destroys the local list",
+    "description": "entrarSala returns true after registering an asynchronous Firebase listener, without verifying that the room exists. Startup therefore skips carregarEstado. carregarTema then applies the initial empty theme state, and aplicarTema persists the still-empty state.itens to localStorage. Firebase's later null snapshot is ignored and never restores the local list. Dynamic reproduction confirmed that a stored item becomes an empty stored and rendered list.",
+    "root_cause": "entrarSala in js/sync.js does not verify the first room snapshot before returning success, allowing the startup path in js/main.js to skip loading valid local state and then persist an empty replacement.",
+    "intended_behavior": "Opening a room should replace local state only after a valid existing room snapshot is received; an unknown room should leave the local list untouched and report that no list was found.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "js/main.js",
+        "line": 195,
+        "scope": "carregarDadosUrl",
+        "description": "Attempts to enter the syntactically valid but nonexistent ?sala= room."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/sync.js",
+        "line": 77,
+        "scope": "entrarSala",
+        "description": "Registers an asynchronous listener and returns true without checking that the room exists or contains a valid snapshot."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/main.js",
+        "line": 221,
+        "scope": "DOMContentLoaded",
+        "description": "Treats the room connection as loaded and skips carregarEstado, leaving state.itens at its initial empty array."
+      },
+      {
+        "kind": "sink",
+        "file": "js/tema.js",
+        "line": 24,
+        "scope": "aplicarTema",
+        "description": "Persists the initial empty state through salvarEstado, overwriting the victim's stored list; the later null Firebase snapshot is ignored."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "user_interaction",
+        "description": "The victim opens a syntactically valid nonexistent room link."
+      },
+      {
+        "kind": "data_state",
+        "description": "The browser already contains a current local shopping list."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "An unauthenticated attacker who can send a link containing any syntactically valid room ID.",
+      "payloads": [
+        "https://kaiolopes02.github.io/Lista-de-Itens/?sala=ffffffffffffffffffffffffffffffff"
+      ],
+      "instructions": [
+        "Victim has a current list in listaCompras_v2.",
+        "Victim opens the nonexistent-room URL.",
+        "The client accepts the room connection, skips local loading, and persists an empty state.",
+        "Reload the application and observe that the list remains empty."
+      ],
+      "expected_result": "The victim's current local list is irrecoverably replaced by an empty list without confirmation or backup."
+    },
+    "remediation": {
+      "strategy": "Load and retain the local state first. Enter a room only after receiving and validating its first non-null snapshot, or explicitly offer an import/join choice. Do not persist the empty startup state before room existence is known, and keep a recoverable backup before replacing a non-empty local list.",
+      "code_changes": [
+        {
+          "file_name": "js/sync.js",
+          "fixed_code": "Make entrarSala resolve only after the first valid snapshot; return false for a null or invalid room."
+        },
+        {
+          "file_name": "js/main.js",
+          "fixed_code": "Load local state before room resolution and never skip it merely because a listener was registered."
+        }
+      ]
+    },
+    "severity": {
+      "likelihood": {
+        "score": "high",
+        "reason": "Any unknown but syntactically valid room link triggers the path, and guessing one is easy."
+      },
+      "impact": {
+        "score": "medium",
+        "reason": "The impact is unrecoverable loss of the victim's current unsaved local list, limited to the affected browser."
+      },
+      "overall_severity": "medium"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "The startup and Firebase null-snapshot behavior were traced and the empty-list overwrite was dynamically reproduced."
+    }
+  },
+  {
+    "verdict": "confirmed",
+    "title": "Empty ?data= snapshots replace the current local list without confirmation",
+    "description": "A valid external snapshot with an empty itens array passes the current filter and replaces state.itens. Because URL loading occurs before local loading and there is no confirmation or backup, the victim's current list is overwritten and persisted as empty. Dynamic reproduction confirmed that one stored item becomes an empty stored and rendered list and remains empty after reload.",
+    "root_cause": "aplicarEstadoExterno in js/storage.js replaces current state without transactional validation, confirmation, or recovery of the previous list, allowing an external empty snapshot to erase local data.",
+    "intended_behavior": "Opening an external snapshot should not silently destroy a non-empty current list; the user should confirm replacement or retain a recoverable copy.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "js/main.js",
+        "line": 203,
+        "scope": "carregarDadosUrl",
+        "description": "Reads and decodes the attacker-controlled ?data= snapshot."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/storage.js",
+        "line": 49,
+        "scope": "aplicarEstadoExterno",
+        "description": "Accepts any array, including an empty array, as the new current list."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/main.js",
+        "line": 221,
+        "scope": "DOMContentLoaded",
+        "description": "Skips carregarEstado because the external URL is considered successfully loaded."
+      },
+      {
+        "kind": "sink",
+        "file": "js/storage.js",
+        "line": 56,
+        "scope": "aplicarEstadoExterno",
+        "description": "Persists the empty replacement under listaCompras_v2, overwriting the prior list."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "user_interaction",
+        "description": "The victim opens a crafted snapshot link."
+      },
+      {
+        "kind": "data_state",
+        "description": "The browser contains a non-empty current list."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "An unauthenticated attacker who can send a link to the victim.",
+      "payloads": [
+        "{\"itens\":[],\"temaAtual\":\"azul\"}"
+      ],
+      "instructions": [
+        "Encode the empty snapshot with btoa(encodeURIComponent(JSON.stringify(payload))).",
+        "Victim opens the resulting ?data= URL.",
+        "Reload the application and inspect listaCompras_v2 and the rendered list."
+      ],
+      "expected_result": "The victim's previous list is silently replaced by an empty list and remains empty after reload."
+    },
+    "remediation": {
+      "strategy": "Stage and fully validate external state before replacing current state. If the current list is non-empty, ask for confirmation and keep a recoverable backup before applying the external snapshot.",
+      "code_changes": [
+        {
+          "file_name": "js/storage.js",
+          "fixed_code": "Return a validated candidate from a pure parser/validator and only assign state.itens after the caller authorizes replacement."
+        },
+        {
+          "file_name": "js/main.js",
+          "fixed_code": "Confirm before replacing a non-empty local list with an external snapshot; preserve the old state in a bounded recovery key."
+        }
+      ]
+    },
+    "severity": {
+      "likelihood": {
+        "score": "high",
+        "reason": "A single crafted link is sufficient and requires no account."
+      },
+      "impact": {
+        "score": "medium",
+        "reason": "The current unsaved shopping list is lost, but the impact is confined to the victim browser."
+      },
+      "overall_severity": "medium"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "The complete overwrite path was traced and reproduced dynamically before and after reload."
+    }
+  },
+  {
+    "verdict": "confirmed",
+    "title": "Failed Firebase publication is reported as a successful share",
+    "description": "publicarEstado catches and logs every Firebase write rejection but resolves normally. criarSala therefore returns a room ID even when the initial set failed, and compartilhar constructs and shares a link as though the room were populated. Permission denial, validation rejection, and network failure can all produce a working-looking link to an absent or unwritten room.",
+    "root_cause": "publicarEstado in js/sync.js suppresses write failures instead of propagating them, allowing criarSala and compartilhar in js/main.js to treat an unwritten room as a successful shared list.",
+    "intended_behavior": "A share link should be presented as successful only after the initial room state has been durably accepted by Firebase; otherwise the user should see an actionable error and no success message.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "js/main.js",
+        "line": 149,
+        "scope": "compartilhar",
+        "description": "Requests a new room before constructing the share link."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/sync.js",
+        "line": 67,
+        "scope": "criarSala",
+        "description": "Awaits publicarEstado and unconditionally returns the generated room ID."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/sync.js",
+        "line": 109,
+        "scope": "publicarEstado",
+        "description": "Catches and suppresses the Firebase set rejection, so the caller cannot distinguish success from failure."
+      },
+      {
+        "kind": "sink",
+        "file": "js/main.js",
+        "line": 153,
+        "scope": "compartilhar",
+        "description": "Constructs a share URL for the unwritten room and later reports that the list and link were copied."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "environmental_dependency",
+        "description": "The Firebase set operation fails because of network, permission, or schema validation."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "A normal user sharing a list while Firebase rejects or cannot complete the write.",
+      "payloads": [
+        "Force an invalid schema or observe a network failure during criarSala()."
+      ],
+      "instructions": [
+        "Invoke the share flow while the Firebase write is rejected.",
+        "Observe that criarSala still returns a room ID.",
+        "Observe that the application copies/shares the link and reports success."
+      ],
+      "expected_result": "The user receives a successful-looking share link even though no room snapshot exists."
+    },
+    "remediation": {
+      "strategy": "Let publicarEstado propagate failures or return an explicit success boolean. In criarSala, only return the room ID after a successful initial write; on failure, disconnect and report the error to the user. Do not display the success message for a failed publication.",
+      "code_changes": [
+        {
+          "file_name": "js/sync.js",
+          "fixed_code": "Remove the swallowing catch or rethrow after logging; return false when publication fails."
+        },
+        {
+          "file_name": "js/main.js",
+          "fixed_code": "Treat a null/failed criarSala result as an error and do not construct or report a successful share URL."
+        }
+      ]
+    },
+    "severity": {
+      "likelihood": {
+        "score": "medium",
+        "reason": "It requires a Firebase rejection or transient failure, but those are realistic operational conditions."
+      },
+      "impact": {
+        "score": "medium",
+        "reason": "The user can believe a shared copy exists when it does not, and may later clear or replace their only local copy based on that false assurance."
+      },
+      "overall_severity": "medium"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "The catch-and-continue path was traced line by line and independently validated."
+    }
+  },
+  {
+    "verdict": "confirmed",
+    "title": "Duplicate or zero IDs cause unintended deletion and unmanageable items",
+    "description": "External validation accepts duplicate numeric IDs and ID zero. The delegated list handler parses data-id with parseInt and rejects ID zero because !id is true. Deletion filters all state items whose ID equals the clicked ID, so one delete action removes every duplicate row. Dynamic reproduction confirmed that deleting one of two ID-7 rows removed both and left the ID-0 row rendered but unable to use its actions.",
+    "root_cause": "aplicarEstadoExterno in js/storage.js does not enforce unique positive integer IDs, while the delegated event handler in js/main.js and delete filter in js/itens.js assume IDs are unique, nonzero, and integral.",
+    "intended_behavior": "Every shopping item should have one unique positive integer identity, and each action should affect exactly the selected item.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "js/main.js",
+        "line": 203,
+        "scope": "carregarDadosUrl",
+        "description": "Loads an external snapshot containing duplicate ID 7 and ID 0."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/storage.js",
+        "line": 51,
+        "scope": "aplicarEstadoExterno",
+        "description": "Accepts all three rows because their IDs are numeric and their names are nonempty; uniqueness, positivity, and integrality are not checked."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/main.js",
+        "line": 273,
+        "scope": "DOMContentLoaded",
+        "description": "Parses the clicked data-id and treats ID zero as a missing action because of the !id guard."
+      },
+      {
+        "kind": "sink",
+        "file": "js/itens.js",
+        "line": 106,
+        "scope": "excluirItem",
+        "description": "Filters the entire state by equality and removes every item sharing the clicked duplicate ID."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "user_interaction",
+        "description": "The victim loads an external snapshot with duplicate or zero IDs and then acts on an affected row."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "An unauthenticated attacker who can deliver a crafted snapshot link.",
+      "payloads": [
+        "{\"itens\":[{\"id\":7,\"nome\":\"A\",\"preco\":1,\"quantidade\":1,\"unidade\":\"un\",\"incluido\":true},{\"id\":7,\"nome\":\"B\",\"preco\":2,\"quantidade\":1,\"unidade\":\"un\",\"incluido\":true},{\"id\":0,\"nome\":\"C\",\"preco\":3,\"quantidade\":1,\"unidade\":\"un\",\"incluido\":true}],\"temaAtual\":\"azul\"}"
+      ],
+      "instructions": [
+        "Open the encoded snapshot URL.",
+        "Click delete on the first ID-7 row.",
+        "Observe that both ID-7 rows are removed.",
+        "Observe that the ID-0 row's actions do not execute because the handler rejects zero."
+      ],
+      "expected_result": "One delete action removes multiple visible items, while another valid row becomes unmanageable."
+    },
+    "remediation": {
+      "strategy": "Validate unique positive safe integer IDs as part of the complete schema. Generate IDs with a collision-resistant platform API or a monotonic checked helper, and remove the falsy-ID guard so valid IDs are not rejected by truthiness.",
+      "code_changes": [
+        {
+          "file_name": "js/storage.js",
+          "fixed_code": "Track a Set of item IDs while validating and reject the snapshot if an ID is not a positive safe integer or appears more than once."
+        },
+        {
+          "file_name": "js/main.js",
+          "fixed_code": "Use Number(btn.dataset.id) and validate Number.isSafeInteger(id), rather than using !id as an existence check."
+        }
+      ]
+    },
+    "severity": {
+      "likelihood": {
+        "score": "medium",
+        "reason": "A crafted external snapshot is sufficient and no Firebase access is required."
+      },
+      "impact": {
+        "score": "medium",
+        "reason": "A single user action deletes multiple visible shopping records and other records become impossible to manage individually."
+      },
+      "overall_severity": "medium"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "The exact duplicate and zero-ID behavior was dynamically reproduced in Chrome and independently traced."
+    }
+  },
+  {
+    "verdict": "confirmed",
+    "title": "Shared room IDs provide only about 31 bits of guessable entropy",
+    "description": "New room IDs use Math.random().toString(36).slice(2, 8), yielding six base-36 characters from a nominal 36^6 search space and using a non-cryptographic generator. Because the RTDB rules intentionally allow anonymous access by room ID, possession of the ID is the access capability. This is materially weaker than the selected 128-bit secret-link model and permits targeted guessing.",
+    "root_cause": "criarSala in js/sync.js generates room capabilities with Math.random and a six-character encoding, providing insufficient entropy for anonymous bearer-style room access.",
+    "intended_behavior": "A shared room link should carry a cryptographically random, high-entropy capability that cannot feasibly be guessed or enumerated.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "js/sync.js",
+        "line": 63,
+        "scope": "criarSala",
+        "description": "Generates a six-character base-36 room ID with Math.random, providing only about 31 nominal bits and no cryptographic unpredictability."
+      },
+      {
+        "kind": "propagation",
+        "file": "js/sync.js",
+        "line": 119,
+        "scope": "_conectarSala",
+        "description": "Uses the generated value as the sole anonymous room access key under listas/$salaId."
+      },
+      {
+        "kind": "sink",
+        "file": "js/main.js",
+        "line": 153,
+        "scope": "compartilhar",
+        "description": "Publishes the guessable capability in the shared URL."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "authorization_role",
+        "description": "The product uses anonymous room IDs as bearer capabilities, as selected for the link-secret access model."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "An unauthenticated attacker who wants to guess another participant's shared room.",
+      "payloads": [
+        "Candidate room IDs generated from the six-character base-36 alphabet, targeting approximately 2,176,782,336 possible values."
+      ],
+      "instructions": [
+        "Obtain or guess candidate room identifiers.",
+        "Request each candidate RTDB path anonymously.",
+        "A successful read/write confirms the guessed bearer capability."
+      ],
+      "expected_result": "The attacker can feasibly target room identifiers and gains the same anonymous read/write access granted to legitimate participants."
+    },
+    "remediation": {
+      "strategy": "Generate room capabilities with crypto.getRandomValues using at least 128 bits, encode them in an URL-safe format, and place them in the URL fragment so ordinary web logs and referrers do not receive the bearer secret. Keep the RTDB path validation compatible with the chosen encoding.",
+      "code_changes": [
+        {
+          "file_name": "js/sync.js",
+          "fixed_code": "const bytes = crypto.getRandomValues(new Uint8Array(16)); const salaId = base64url(bytes);"
+        },
+        {
+          "file_name": "js/main.js",
+          "fixed_code": "Build new shared links with the room capability in location.hash and read it from the fragment on startup."
+        }
+      ]
+    },
+    "severity": {
+      "likelihood": {
+        "score": "medium",
+        "reason": "Guessing requires many targeted requests, but the nominal space is small enough for sustained automated guessing and Math.random is not cryptographic."
+      },
+      "impact": {
+        "score": "medium",
+        "reason": "A successful guess grants anonymous read/write access to that room's shopping data, limited to one room."
+      },
+      "overall_severity": "medium"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "The generator and access model are directly visible in source; bulk enumeration itself was not performed."
+    }
+  },
+  {
+    "verdict": "rejected",
+    "reason": "The claim that the current form accepts 1e309 and persists Infinity was false. Chrome's input[type=number] sanitizer clears 1e309 and reports badInput/NaN, so parseFloat receives an empty string and the existing validation rejects it. The distinct malicious ?data= JSON variant is valid and is reported separately as a persistent external-state corruption issue."
+  }
+]
