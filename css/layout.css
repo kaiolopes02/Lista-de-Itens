@@ -5,10 +5,27 @@
 /* Wrapper principal */
 .app {
   width: 100%;
-  max-width: 720px;
+  max-width: 900px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+/* Desktop: formulário e lista lado a lado */
+@media (min-width: 900px) {
+  .app {
+    display: grid;
+    grid-template-columns: 380px minmax(0, 1fr);
+    grid-template-areas:
+      "cabecalho cabecalho"
+      "totais    totais"
+      "form      lista";
+    align-items: start;
+  }
+  .cabecalho   { grid-area: cabecalho; }
+  .totais-card { grid-area: totais; }
+  .form-card   { grid-area: form; position: sticky; top: 20px; }
+  .lista-card  { grid-area: lista; }
 }
 
 /* Card base */
@@ -46,7 +63,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--cor-sobre-primaria);
   font-size: 1.2rem;
   box-shadow: 0 4px 12px rgba(var(--cor-primaria-rgb), 0.35);
   flex-shrink: 0;
@@ -90,7 +107,10 @@
   transition: background var(--trans);
 }
 
-.total-bloco label {
+.total-rotulo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -155,7 +175,7 @@
 
 .badge-contagem {
   background: var(--cor-primaria);
-  color: #fff;
+  color: var(--cor-sobre-primaria);
   border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 700;
@@ -260,11 +280,13 @@
   animation: itemSair 0.28s cubic-bezier(.4,0,.2,1) forwards;
 }
 
-/* Checkbox do item */
+/* Checkbox do item (agora um botão acessível) */
 .item-check {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  appearance: none;
+  border-radius: 10px;
   border: 2px solid var(--cor-borda);
   background: var(--cor-fundo);
   cursor: pointer;
@@ -281,7 +303,7 @@
 .item.incluido .item-check {
   background: var(--cor-primaria);
   border-color: var(--cor-primaria);
-  color: #fff;
+  color: var(--cor-sobre-primaria);
   box-shadow: 0 2px 8px rgba(var(--cor-primaria-rgb), 0.35);
 }
 

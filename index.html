@@ -6,7 +6,7 @@
   <title>Lista de Compras</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="manifest" href="site.webmanifest">
-  <meta name="theme-color" content="#2196f3">
+  <meta name="theme-color" content="#1565c0">
 </head>
 <body>
 
@@ -18,55 +18,67 @@
   </div>
 
   <!-- Modal de temas -->
-  <div class="tema-overlay" id="temaOverlay" role="dialog" aria-modal="true">
+  <dialog id="temaDialog" class="modal tema-dialog" aria-labelledby="temaTitulo">
     <div class="tema-modal">
       <h3 id="temaTitulo">Escolha um tema</h3>
       <div class="tema-grade" id="temaGrade"></div>
     </div>
-  </div>
+  </dialog>
 
   <!-- Modal de histórico -->
-  <div class="hist-overlay" id="histOverlay" role="dialog" aria-modal="true">
+  <dialog id="histDialog" class="modal hist-dialog" aria-labelledby="histTitulo">
     <div class="hist-modal">
       <div class="hist-modal-header">
         <h3 id="histTitulo">Histórico de Compras</h3>
-        <button class="btn-icone" id="btnFecharHistorico" title="Fechar"></button>
+        <button class="btn-icone" id="btnFecharHistorico" title="Fechar" aria-label="Fechar histórico"></button>
       </div>
       <div id="histConteudo" class="hist-conteudo"></div>
     </div>
-  </div>
+  </dialog>
+
+  <!-- Confirmação de substituição da lista -->
+  <dialog id="confirmDialog" class="modal confirm-dialog" aria-labelledby="confirmTitulo" aria-describedby="confirmTexto">
+    <div class="confirm-modal">
+      <h3 id="confirmTitulo">Substituir lista?</h3>
+      <p id="confirmTexto"></p>
+      <div class="form-acoes">
+        <button type="button" id="confirmCancelar" class="btn btn-cancelar">Manter minha lista</button>
+        <button type="button" id="confirmAceitar" class="btn btn-primario">Substituir</button>
+      </div>
+    </div>
+  </dialog>
 
   <div class="app">
 
     <header class="card cabecalho">
       <div class="cabecalho-titulo">
-        <div class="logo-icone" id="logoIcone"></div>
+        <div class="logo-icone" id="logoIcone" aria-hidden="true"></div>
         <h1>Lista de Compras<span>Organize suas compras</span></h1>
       </div>
       <div class="controles">
-        <button class="btn-icone" id="btnTema"         title="Mudar tema"></button>
-        <button class="btn-icone" id="btnHistorico"    title="Histórico de compras"></button>
-        <button class="btn-icone" id="btnCompartilhar" title="Compartilhar lista"></button>
-        <button class="btn-icone" id="btnOrdenarNome"  title="Ordenar A–Z"></button>
-        <button class="btn-icone" id="btnOrdenarData"  title="Mais recente"></button>
-        <button class="btn-icone" id="btnToggleTodos"  title="Marcar / Desmarcar todos"></button>
+        <button class="btn-icone" id="btnTema"         title="Mudar tema"              aria-label="Mudar tema"></button>
+        <button class="btn-icone" id="btnHistorico"    title="Histórico de compras"    aria-label="Abrir histórico de compras"></button>
+        <button class="btn-icone" id="btnCompartilhar" title="Compartilhar lista"      aria-label="Compartilhar lista"></button>
+        <button class="btn-icone" id="btnOrdenarNome"  title="Ordenar A–Z"             aria-label="Ordenar por nome"></button>
+        <button class="btn-icone" id="btnOrdenarData"  title="Mais recente"            aria-label="Ordenar por mais recente"></button>
+        <button class="btn-icone" id="btnToggleTodos"  title="Marcar / Desmarcar todos" aria-label="Marcar ou desmarcar todos"></button>
       </div>
     </header>
 
-    <section class="card totais-card">
+    <section class="card totais-card" aria-label="Totais da lista">
       <div class="total-bloco">
-        <label><span class="label-icone" id="iconeCesto"></span>Total de itens</label>
+        <span class="total-rotulo"><span class="label-icone" id="iconeCesto"></span>Total de itens</span>
         <div class="valor" id="totalItens">0</div>
         <div class="progresso-barra-wrap">
           <div class="progresso-barra" id="progresso" style="width:0%"></div>
         </div>
       </div>
       <div class="total-bloco">
-        <label><span class="label-icone" id="iconeEtiqueta"></span>Itens marcados</label>
+        <span class="total-rotulo"><span class="label-icone" id="iconeEtiqueta"></span>Itens marcados</span>
         <div class="valor" id="totalMarcados">0/0</div>
       </div>
       <div class="total-bloco destaque">
-        <label><span class="label-icone" id="iconeRecibo"></span>Total da compra</label>
+        <span class="total-rotulo"><span class="label-icone" id="iconeRecibo"></span>Total da compra</span>
         <div class="valor" id="totalCompra">R$ 0,00</div>
       </div>
     </section>
@@ -87,7 +99,7 @@
         </div>
         <div class="campo">
           <label for="nome"><span class="label-icone" id="iconeNome"></span>Nome do item</label>
-          <input type="text" id="nome" placeholder="Ex: Arroz integral" required>
+          <input type="text" id="nome" placeholder="Ex: Arroz integral" maxlength="120" required>
         </div>
         <div class="grupo-duplo">
           <div class="campo">
@@ -106,12 +118,12 @@
       </form>
     </section>
 
-    <section class="card">
+    <section class="card lista-card" aria-labelledby="tituloItens">
       <div class="lista-header">
-        <h2>Itens <span class="badge-contagem" id="badgeContagem">0</span></h2>
+        <h2 id="tituloItens">Itens <span class="badge-contagem" id="badgeContagem">0</span></h2>
         <div class="lista-acoes">
-          <button class="btn-icone" id="btnFinalizarCompra" title="Finalizar compra e salvar no histórico" style="display:none"></button>
-          <button class="btn-icone" id="btnLimparTodos"     title="Limpar lista" style="display:none"></button>
+          <button class="btn-icone" id="btnFinalizarCompra" title="Finalizar compra e salvar no histórico" aria-label="Finalizar compra e salvar no histórico" style="display:none"></button>
+          <button class="btn-icone" id="btnLimparTodos"     title="Limpar lista" aria-label="Limpar lista" style="display:none"></button>
         </div>
       </div>
       <div id="listaItens" class="lista-itens" role="list"></div>

@@ -1,62 +1,63 @@
 /* ============================================================
    TEMA — Paletas de cor e responsividade
+   Cores primárias escolhidas para texto branco a >= 4.5:1.
    ============================================================ */
 
 /* 🎨 Temas */
 [data-tema="vermelho"] {
-  --cor-primaria:      #e53935;
-  --cor-primaria-rgb:  229, 57, 53;
-  --cor-primaria-dark: #b71c1c;
+  --cor-primaria:      #c62828;
+  --cor-primaria-rgb:  198, 40, 40;
+  --cor-primaria-dark: #8e0000;
   --cor-fundo: #fff5f5;
 }
 
 [data-tema="laranja"] {
-  --cor-primaria:      #fb8c00;
-  --cor-primaria-rgb:  251, 140, 0;
-  --cor-primaria-dark: #e65100;
+  --cor-primaria:      #b45309;
+  --cor-primaria-rgb:  180, 83, 9;
+  --cor-primaria-dark: #8a3f07;
   --cor-fundo: #fff8ee;
 }
 
 [data-tema="amarelo"] {
-  --cor-primaria:      #f9a825;
-  --cor-primaria-rgb:  249, 168, 37;
-  --cor-primaria-dark: #f57f17;
+  --cor-primaria:      #7a5c00;
+  --cor-primaria-rgb:  122, 92, 0;
+  --cor-primaria-dark: #5c4500;
   --cor-fundo: #fffde7;
-  --cor-texto: #4a3800;
+  --cor-texto: #3d2f00;
 }
 
 [data-tema="verde"] {
-  --cor-primaria:      #43a047;
-  --cor-primaria-rgb:  67, 160, 71;
+  --cor-primaria:      #2e7d32;
+  --cor-primaria-rgb:  46, 125, 50;
   --cor-primaria-dark: #1b5e20;
   --cor-fundo: #f0faf0;
 }
 
 [data-tema="azul"] {
-  --cor-primaria:      #2196f3;
-  --cor-primaria-rgb:  33, 150, 243;
-  --cor-primaria-dark: #1565c0;
+  --cor-primaria:      #1565c0;
+  --cor-primaria-rgb:  21, 101, 192;
+  --cor-primaria-dark: #0d47a1;
   --cor-fundo: #f0f7ff;
 }
 
 [data-tema="anil"] {
-  --cor-primaria:      #3f51b5;
-  --cor-primaria-rgb:  63, 81, 181;
+  --cor-primaria:      #303f9f;
+  --cor-primaria-rgb:  48, 63, 159;
   --cor-primaria-dark: #1a237e;
   --cor-fundo: #eef0fb;
 }
 
 [data-tema="violeta"] {
-  --cor-primaria:      #8e24aa;
-  --cor-primaria-rgb:  142, 36, 170;
+  --cor-primaria:      #6a1b9a;
+  --cor-primaria-rgb:  106, 27, 154;
   --cor-primaria-dark: #4a148c;
   --cor-fundo: #f8f0fc;
 }
 
 [data-tema="rosa"] {
-  --cor-primaria:      #e91e8c;
-  --cor-primaria-rgb:  233, 30, 140;
-  --cor-primaria-dark: #880e4f;
+  --cor-primaria:      #ad1457;
+  --cor-primaria-rgb:  173, 20, 87;
+  --cor-primaria-dark: #7a0e3d;
   --cor-fundo: #fff0f8;
 }
 
@@ -64,6 +65,7 @@
   --cor-primaria:      #64b5f6;
   --cor-primaria-rgb:  100, 181, 246;
   --cor-primaria-dark: #42a5f5;
+  --cor-sobre-primaria: #10131c;
   --cor-fundo:         #0f1117;
   --cor-card:          #1a1f2e;
   --cor-texto:         #e8eaf6;
@@ -80,7 +82,6 @@
 
   .cabecalho          { padding: 18px 18px 16px; }
   .controles          { gap: 4px; }
-  .btn-icone          { width: 34px; height: 34px; font-size: 0.88rem; }
 
   .totais-card        { padding: 14px 16px; gap: 10px; flex-wrap: wrap; }
   .total-bloco        { min-width: calc(50% - 5px); }
@@ -95,6 +96,14 @@
 
   .item               { padding: 12px; }
   .item-nome          { font-size: 0.9rem; }
+}
+
+/* Itens em duas linhas para não estourar a largura */
+@media (max-width: 520px) {
+  .item        { flex-wrap: wrap; }
+  .item-info   { flex: 1 1 calc(100% - 60px); }
+  .item-total  { margin-left: 56px; }
+  .item-acoes  { margin-left: auto; }
 }
 
 @media (max-width: 400px) {
